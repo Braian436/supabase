@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     # Apps propias del proyecto
     'core',
     'api',
+    'productos',
 ]
 
 MIDDLEWARE = [
