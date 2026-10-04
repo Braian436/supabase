@@ -10,7 +10,7 @@ class Empleados(models.Model):
     fecha_alta = models.DateTimeField(blank=True, null=True)
     ultimo_acceso = models.DateTimeField(blank=True, null=True)
     porcentaje_comision = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    id_rol = models.ForeignKey('Roles', models.DO_NOTHING, db_column='id_rol', blank=True, null=True)
+    id_rol = models.ForeignKey('empleados.Roles', models.DO_NOTHING, db_column='id_rol', blank=True, null=True)
 
     class Meta:
         managed = False
@@ -63,3 +63,48 @@ class Roles(models.Model):
 
     def __str__(self):
         return f"Rol: {self.nombre} - {self.descripcion}"
+
+class Alquileres(models.Model):
+    id_alquiler = models.AutoField(primary_key=True)
+    id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
+    fecha_inicio = models.DateField(blank=True, null=True)
+    fecha_fin = models.DateField(blank=True, null=True)
+    importe_acordado = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    estado = models.CharField(max_length=20, blank=True, null=True)
+    observaciones = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'alquileres'
+
+    def __str__(self):
+        return f"Alquiler: {self.id_empleado} - {self.fecha_inicio} to {self.fecha_fin} | Importe: {self.importe_acordado}"
+
+class PagosAlquileres(models.Model):
+    id_pago_alquiler = models.AutoField(primary_key=True)
+    id_alquiler = models.ForeignKey('Alquileres', models.DO_NOTHING, db_column='id_alquiler', blank=True, null=True)
+    fecha = models.DateTimeField(blank=True, null=True)
+    importe = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    estado = models.BooleanField(blank=True, null=True)
+    medio_pago = models.CharField(max_length=30, blank=True, null=True)
+    observaciones = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'pagos_alquileres'
+
+    def __str__(self):
+        return f"Pago Alquiler: {self.id_alquiler} - {self.fecha} | Importe: {self.importe} | Estado: {'Pagado' if self.estado else 'Pendiente'}"
+
+class Apertura(models.Model):
+    id_apertura = models.AutoField(primary_key=True)
+    id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
+    fecha_hora = models.DateTimeField(blank=True, null=True)
+    turno = models.CharField(max_length=10, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'apertura'
+
+    def __str__(self):
+        return f"Apertura: {self.id_empleado} - {self.fecha_hora} | Turno: {self.turno}"
