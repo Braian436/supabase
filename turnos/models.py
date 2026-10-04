@@ -6,7 +6,7 @@ class Turnos(models.Model):
     hora = models.TimeField(blank=True, null=True)
     estado = models.CharField(blank=True, null=True)
     observacion = models.CharField(blank=True, null=True)
-    # id_cliente = models.ForeignKey('Clientes', models.DO_NOTHING, db_column='id_cliente', blank=True, null=True)
+    id_cliente = models.ForeignKey('clientes.Clientes', models.DO_NOTHING, db_column='id_cliente', blank=True, null=True)
     id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
 
     class Meta:
@@ -18,10 +18,10 @@ class Turnos(models.Model):
         hora_turno = self.hora.strftime("%H:%M") if self.hora else "Hora no disponible"
         estado_turno = self.estado or "Estado no disponible"
         observacion_turno = self.observacion or "Sin observación"
-        # cliente_turno = str(self.id_cliente) if self.id_cliente else "Cliente no asignado"
+        cliente_turno = str(self.id_cliente) if self.id_cliente else "Cliente no asignado"
         empleado_turno = str(self.id_empleado) if self.id_empleado else "Empleado no asignado"
-        #return f"Turno: {fecha_turno} {hora_turno} | Estado: {estado_turno} | Observación: {observacion_turno} | Cliente: {cliente_turno} | Empleado: {empleado_turno}"
-        return f"Turno: {fecha_turno} {hora_turno} | Estado: {estado_turno} | Observación: {observacion_turno} | Empleado: {empleado_turno}"
+        return f"Turno: {fecha_turno} {hora_turno} | Estado: {estado_turno} | Observación: {observacion_turno} | Cliente: {cliente_turno} | Empleado: {empleado_turno}"
+        #return f"Turno: {fecha_turno} {hora_turno} | Estado: {estado_turno} | Observación: {observacion_turno} | Empleado: {empleado_turno}"
 
 class ServiciosTurnos(models.Model):
     id_servicio_turno = models.IntegerField(primary_key=True)
