@@ -47,6 +47,13 @@ INSTALLED_APPS = [
     # Apps propias del proyecto
     'core',
     'api',
+    'productos',
+    'empleados',
+    'turnos',
+    'clientes',
+    'ventas',
+    'cajas',
+    'compras',
 ]
 
 MIDDLEWARE = [
