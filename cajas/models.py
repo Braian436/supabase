@@ -5,7 +5,7 @@ class Cajas(models.Model):
     id_apertura = models.ForeignKey('empleados.Apertura', models.DO_NOTHING, db_column='id_apertura', blank=True, null=True)
     fecha_apertura = models.DateTimeField(blank=True, null=True)
     fecha_cierre = models.DateTimeField(blank=True, null=True)
-    saldo_incial = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    saldo_inicial = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
     saldo_esperado = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
     saldo_real = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
     diferencia = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
