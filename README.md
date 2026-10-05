@@ -1,11 +1,5 @@
 # Base Docker + Django + PostgreSQL — Taller de Programación
 
-Proyecto Django ya generado y funcionando, listo para levantar con Docker y
-empezar a desarrollar el sistema de la organización asignada (Práctica
-Profesional) sin perder tiempo en la configuración inicial. Ya incluye
-Django REST Framework instalado y un endpoint de ejemplo, por si su
-organización necesita una API REST.
-
 ## Contenido
 
 - `Dockerfile` → define la imagen del contenedor de Django.
@@ -126,13 +120,17 @@ Para agregar un endpoint real sobre un modelo de su organización:
 ## Flujo para sincronizar Nuevas Tablas de Supabase
 Cada vez que se cree o modifique una tabla directamente desde el panel de Supabase, se debe seguir este procedimiento para reflejarla en Django:
 
-1. Inspeccionar la base de datos con `inspectdb`
+1. Para crear una app nueva de Django:
+   ```
+   docker compose exec web python manage.py startapp nombre_app
+   ```
+2.  Inspeccionar la base de datos con `inspectdb`
    Ejecutar el comando de inspección indicando el nombre exacto de la tabla creada en Supabase:
    ```
    docker compose exec web python manage.py inspectdb nombre_de_tabla
    ```
-2. Actualizar `barberia/models.py`
-   Copiar la clase generada en la terminal y pegarla al final de `barberia/models.py`, asegurándose de mantener `managed = False` y de incluir el método `__str__`:
+3. Actualizar `nombre_app/models.py`
+   Copiar la clase generada en la terminal y pegarla al final de `nombre_app/models.py`, asegurándose de mantener `managed = False` y de incluir el método `__str__`:
    ```
    class NombreDeTabla(models.Model):
     # Campos detectados automáticamente...
@@ -144,14 +142,14 @@ Cada vez que se cree o modifique una tabla directamente desde el panel de Supaba
     def __str__(self):
         return f"Registro #{self.pk}"
    ```
-3. Asentar las migraciones
+4. Asentar las migraciones
    Registrar internamente el modelo en el historial de Django sin alterar la estructura física de Supabase:
    ```
-   docker compose exec web python manage.py makemigrations barberia
+   docker compose exec web python manage.py makemigrations
    docker compose exec web python manage.py migrate
    ```
-4. Habilitar la entidad en el Panel de Administracion
-   Abrir `barberia/admin.py`, importar el modelo y registrarlo:
+5. Habilitar la entidad en el Panel de Administracion
+   Abrir `nombre_app/admin.py`, importar el modelo y registrarlo:
    ```
    from .models import NombreDeTabla
 
