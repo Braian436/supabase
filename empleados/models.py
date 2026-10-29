@@ -2,15 +2,15 @@ from django.db import models
 
 class Empleados(models.Model):
     id_empleado = models.IntegerField(primary_key=True)
-    nombre_empleado = models.CharField(max_length=50, blank=True, null=True)
-    foto_empleado = models.BinaryField(blank=True, null=True)
-    dni = models.CharField(max_length=20, blank=True, null=True)
-    password = models.CharField(max_length=150, blank=True, null=True)
-    estado = models.CharField(max_length=20, blank=True, null=True)
-    fecha_alta = models.DateTimeField(blank=True, null=True)
+    nombre_empleado = models.CharField(max_length=50)
+    foto_empleado = models.TextField(blank=True, null=True)
+    dni = models.CharField(max_length=20)
+    password = models.CharField(max_length=150)
+    estado = models.CharField(max_length=20)
+    fecha_alta = models.DateTimeField()
     ultimo_acceso = models.DateTimeField(blank=True, null=True)
-    porcentaje_comision = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    id_rol = models.ForeignKey('empleados.Roles', models.DO_NOTHING, db_column='id_rol', blank=True, null=True)
+    porcentaje_comision = models.DecimalField(blank=True, null=True)
+    id_rol = models.ForeignKey('empleados.Roles', models.DO_NOTHING, db_column='id_rol')
 
     class Meta:
         managed = False
@@ -21,10 +21,10 @@ class Empleados(models.Model):
 
 class RegistrosDeAsistencias(models.Model):
     id_asistencia = models.AutoField(primary_key=True)
-    id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
-    fecha = models.DateField(blank=True, null=True)
-    hora_entrada = models.TimeField(blank=True, null=True)
-    hora_salida = models.TimeField(blank=True, null=True)
+    id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado')
+    fecha = models.DateField()
+    hora_entrada = models.TimeField()
+    hora_salida = models.TimeField()
     fecha_modificacion = models.DateTimeField(blank=True, null=True)
     estado = models.CharField(max_length=20, blank=True, null=True)
     observaciones = models.CharField(max_length=200, blank=True, null=True)
@@ -41,8 +41,8 @@ class Liquidaciones(models.Model):
     id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
     fecha_inicio = models.DateTimeField(blank=True, null=True)
     fecha_generacion = models.DateField(blank=True, null=True)
-    total_comision = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    total_a_pagar = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    total_comision = models.DecimalField(blank=True, null=True)
+    total_a_pagar = models.DecimalField(blank=True, null=True)
     estado = models.CharField(max_length=20, blank=True, null=True)
 
     class Meta:
@@ -54,7 +54,7 @@ class Liquidaciones(models.Model):
 
 class Roles(models.Model):
     id_rol = models.IntegerField(primary_key=True)
-    nombre = models.CharField(max_length=20, blank=True, null=True)
+    nombre = models.CharField(max_length=20)
     descripcion = models.CharField(max_length=240, blank=True, null=True)
 
     class Meta:
@@ -66,11 +66,10 @@ class Roles(models.Model):
 
 class Alquileres(models.Model):
     id_alquiler = models.AutoField(primary_key=True)
-    id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
-    fecha_inicio = models.DateField(blank=True, null=True)
+    id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado')
+    fecha_inicio = models.DateField()
     fecha_fin = models.DateField(blank=True, null=True)
-    importe_acordado = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
-    estado = models.CharField(max_length=20, blank=True, null=True)
+    importe_acordado = models.DecimalField(blank=True, null=True)
     observaciones = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
@@ -82,9 +81,9 @@ class Alquileres(models.Model):
 
 class PagosAlquileres(models.Model):
     id_pago_alquiler = models.AutoField(primary_key=True)
-    id_alquiler = models.ForeignKey('Alquileres', models.DO_NOTHING, db_column='id_alquiler', blank=True, null=True)
-    fecha = models.DateTimeField(blank=True, null=True)
-    importe = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    id_alquiler = models.ForeignKey('Alquileres', models.DO_NOTHING, db_column='id_alquiler')
+    fecha = models.DateTimeField()
+    importe = models.DecimalField()
     estado = models.BooleanField(blank=True, null=True)
     medio_pago = models.CharField(max_length=30, blank=True, null=True)
     observaciones = models.CharField(max_length=255, blank=True, null=True)
@@ -98,9 +97,9 @@ class PagosAlquileres(models.Model):
 
 class Apertura(models.Model):
     id_apertura = models.AutoField(primary_key=True)
-    id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
-    fecha_hora = models.DateTimeField(blank=True, null=True)
-    turno = models.CharField(max_length=10, blank=True, null=True)
+    id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado')
+    fecha_hora = models.DateTimeField()
+    turno = models.CharField(max_length=10)
 
     class Meta:
         managed = False
