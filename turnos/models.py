@@ -43,7 +43,7 @@ class Servicios(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.CharField(max_length=250, blank=True, null=True)
     estado = models.BooleanField(blank=True, null=True)
-    precio = models.DecimalField()
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
     id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
 
     class Meta:

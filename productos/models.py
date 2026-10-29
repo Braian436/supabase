@@ -9,7 +9,7 @@ class Productos(models.Model):
     descripcion = models.CharField(max_length=255)
     tipo = models.CharField(max_length=50, blank=True, null=True)
     estado = models.BooleanField(blank=True, null=True)
-    costo = models.DecimalField(blank=True, null=True)
+    costo = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
 
     class Meta:
         managed = False

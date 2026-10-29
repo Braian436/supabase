@@ -9,7 +9,7 @@ class Empleados(models.Model):
     estado = models.CharField(max_length=20)
     fecha_alta = models.DateTimeField()
     ultimo_acceso = models.DateTimeField(blank=True, null=True)
-    porcentaje_comision = models.DecimalField(blank=True, null=True)
+    porcentaje_comision = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     id_rol = models.ForeignKey('empleados.Roles', models.DO_NOTHING, db_column='id_rol')
 
     class Meta:
@@ -41,8 +41,8 @@ class Liquidaciones(models.Model):
     id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
     fecha_inicio = models.DateTimeField(blank=True, null=True)
     fecha_generacion = models.DateField(blank=True, null=True)
-    total_comision = models.DecimalField(blank=True, null=True)
-    total_a_pagar = models.DecimalField(blank=True, null=True)
+    total_comision = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    total_a_pagar = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     estado = models.CharField(max_length=20, blank=True, null=True)
 
     class Meta:
@@ -69,7 +69,7 @@ class Alquileres(models.Model):
     id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado')
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField(blank=True, null=True)
-    importe_acordado = models.DecimalField(blank=True, null=True)
+    importe_acordado = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     observaciones = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
@@ -83,7 +83,7 @@ class PagosAlquileres(models.Model):
     id_pago_alquiler = models.AutoField(primary_key=True)
     id_alquiler = models.ForeignKey('Alquileres', models.DO_NOTHING, db_column='id_alquiler')
     fecha = models.DateTimeField()
-    importe = models.DecimalField()
+    importe = models.DecimalField(max_digits=12, decimal_places=2)
     estado = models.BooleanField(blank=True, null=True)
     medio_pago = models.CharField(max_length=30, blank=True, null=True)
     observaciones = models.CharField(max_length=255, blank=True, null=True)
