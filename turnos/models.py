@@ -3,11 +3,11 @@ from django.db import models
 class Turnos(models.Model):
     id_turno = models.BigAutoField(primary_key=True)
     fecha = models.DateField()
-    hora = models.TimeField(blank=True, null=True)
+    hora = models.TimeField()
     estado = models.CharField(blank=True, null=True)
     observacion = models.CharField(blank=True, null=True)
-    id_cliente = models.ForeignKey('clientes.Clientes', models.DO_NOTHING, db_column='id_cliente', blank=True, null=True)
-    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
+    id_cliente = models.ForeignKey('clientes.Clientes', models.DO_NOTHING, db_column='id_cliente')
+    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
 
     class Meta:
         managed = False
@@ -25,8 +25,8 @@ class Turnos(models.Model):
 class ServiciosTurnos(models.Model):
     id_servicio_turno = models.IntegerField(primary_key=True)
     orden = models.IntegerField(blank=True, null=True)
-    id_servicio = models.ForeignKey('Servicios', models.DO_NOTHING, db_column='id_servicio', blank=True, null=True)
-    id_turno = models.ForeignKey('Turnos', models.DO_NOTHING, db_column='id_turno', blank=True, null=True)
+    id_servicio = models.ForeignKey('turnos.Servicios', models.DO_NOTHING, db_column='id_servicio')
+    id_turno = models.ForeignKey('turnos.Turnos', models.DO_NOTHING, db_column='id_turno')
 
     class Meta:
         managed = False
@@ -40,11 +40,11 @@ class ServiciosTurnos(models.Model):
 
 class Servicios(models.Model):
     id_servicio = models.IntegerField(primary_key=True)
-    nombre = models.CharField(max_length=100, blank=True, null=True)
+    nombre = models.CharField(max_length=100)
     descripcion = models.CharField(max_length=250, blank=True, null=True)
     estado = models.BooleanField(blank=True, null=True)
-    precio = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
-    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
+    precio = models.DecimalField()
+    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
 
     class Meta:
         managed = False
