@@ -38,7 +38,7 @@ class RegistrosDeAsistencias(models.Model):
 
 class Liquidaciones(models.Model):
     id_liquidacion = models.AutoField(primary_key=True)
-    id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
+    id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado')
     fecha_inicio = models.DateTimeField(blank=True, null=True)
     fecha_generacion = models.DateField(blank=True, null=True)
     total_comision = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
@@ -53,7 +53,7 @@ class Liquidaciones(models.Model):
         return f"Liquidación: {self.id_empleado} - {self.fecha_generacion} | Total a Pagar: {self.total_a_pagar}"
 
 class Roles(models.Model):
-    id_rol = models.IntegerField(primary_key=True)
+    id_rol = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=20)
     descripcion = models.CharField(max_length=240, blank=True, null=True)
 

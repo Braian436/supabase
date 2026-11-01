@@ -4,7 +4,7 @@ class Productos(models.Model):
     id_producto = models.AutoField(primary_key=True)
     id_marca = models.ForeignKey('productos.Marcas', models.DO_NOTHING, db_column='id_marca')
     id_descuento = models.ForeignKey('productos.Descuentos', models.DO_NOTHING, db_column='id_descuento', blank=True, null=True)
-    codigo_barra = models.BigIntegerField()
+    codigo_barra = models.BigIntegerField(blank=True, null=True)
     nombre = models.CharField(max_length=100)
     descripcion = models.CharField(max_length=255)
     tipo = models.CharField(max_length=50, blank=True, null=True)
@@ -51,7 +51,7 @@ class Stock(models.Model):
 
 class Marcas(models.Model):
     id_marca = models.AutoField(primary_key=True)
-    id_categoria = models.ForeignKey('productos.Categorias', models.DO_NOTHING, db_column='id_categoria', blank=True, null=True)
+    id_categoria = models.ForeignKey('productos.Categorias', models.DO_NOTHING, db_column='id_categoria')
     nombre = models.CharField(max_length=80)
 
     class Meta:
