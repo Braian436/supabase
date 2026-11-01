@@ -1,7 +1,7 @@
 from django.db import models
 
 class Empleados(models.Model):
-    id_empleado = models.IntegerField(primary_key=True)
+    id_empleado = models.AutoField(primary_key=True)
     nombre_empleado = models.CharField(max_length=50)
     foto_empleado = models.TextField(blank=True, null=True)
     dni = models.CharField(max_length=20)
