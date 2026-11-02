@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Max
 
 class Turnos(models.Model):
     id_turno = models.BigAutoField(primary_key=True)
