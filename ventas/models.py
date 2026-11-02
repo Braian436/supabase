@@ -2,9 +2,9 @@ from django.db import models
 
 class Ordenes(models.Model):
     id_orden = models.AutoField(primary_key=True)
-    id_cliente = models.ForeignKey('clientes.Clientes', models.DO_NOTHING, db_column='id_cliente', blank=True, null=True)
-    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
-    fecha_apertura = models.DateTimeField(blank=True, null=True)
+    id_cliente = models.ForeignKey('clientes.Clientes', models.DO_NOTHING, db_column='id_cliente')
+    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
+    fecha_apertura = models.DateTimeField()
     fecha_cierre = models.DateTimeField(blank=True, null=True)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     descuentos = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
@@ -20,26 +20,28 @@ class Ordenes(models.Model):
 
 class PagosOrden(models.Model):
     id_pago_orden = models.AutoField(primary_key=True)
-    id_orden = models.ForeignKey('Ordenes', models.DO_NOTHING, db_column='id_orden', blank=True, null=True)
-    fecha = models.DateTimeField(blank=True, null=True)
-    importe = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    id_orden = models.ForeignKey('ventas.Ordenes', models.DO_NOTHING, db_column='id_orden')
+    fecha = models.DateTimeField()
+    importe = models.DecimalField(max_digits=10, decimal_places=2)
     estado = models.BooleanField(blank=True, null=True)
     medio_pago = models.CharField(max_length=30, blank=True, null=True)
     observaciones = models.CharField(max_length=255, blank=True, null=True)
 
+
     class Meta:
         managed = False
         db_table = 'pagos_orden'
-    
+
     def __str__(self):
         return f"Pago {self.id_pago_orden} - Orden: {self.id_orden} - Importe: {self.importe}"
 
 class DetalleServicios(models.Model):
     id_detalle_servicio = models.AutoField(primary_key=True)
-    id_orden = models.ForeignKey('Ordenes', models.DO_NOTHING, db_column='id_orden', blank=True, null=True)
-    id_servicio = models.ForeignKey('turnos.Servicios', models.DO_NOTHING, db_column='id_servicio', blank=True, null=True)
+    id_orden = models.ForeignKey('ventas.Ordenes', models.DO_NOTHING, db_column='id_orden')
+    id_servicio = models.ForeignKey('turnos.Servicios', models.DO_NOTHING, db_column='id_servicio')
     precio_actual = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     sub_total = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+
 
     class Meta:
         managed = False
@@ -50,8 +52,8 @@ class DetalleServicios(models.Model):
 
 class DetalleProductos(models.Model):
     id_detalle_producto = models.AutoField(primary_key=True)
-    id_orden = models.ForeignKey('Ordenes', models.DO_NOTHING, db_column='id_orden', blank=True, null=True)
-    id_producto = models.ForeignKey('productos.Productos', models.DO_NOTHING, db_column='id_producto', blank=True, null=True)
+    id_orden = models.ForeignKey('ventas.Ordenes', models.DO_NOTHING, db_column='id_orden')
+    id_producto = models.ForeignKey('productos.Productos', models.DO_NOTHING, db_column='id_producto')
     cantidad = models.IntegerField(blank=True, null=True)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     sub_total = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
@@ -62,4 +64,3 @@ class DetalleProductos(models.Model):
 
     def __str__(self):
         return f"Detalle Producto {self.id_detalle_producto} - Orden: {self.id_orden} - Producto: {self.id_producto} - Cantidad: {self.cantidad} - Subtotal: {self.sub_total}"
-
