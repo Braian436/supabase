@@ -16,7 +16,7 @@ class Cajas(models.Model):
     def __str__(self):
         return f"Caja {self.id_caja} - Apertura: {self.id_apertura} - Cierre: {self.fecha_cierre}"
 
-class MovimientosCaja(models.Model):
+class MovimientosCajas(models.Model):
     id_movimiento_caja = models.AutoField(primary_key=True)
     id_pago_alquiler = models.ForeignKey('empleados.PagosAlquileres', models.DO_NOTHING, db_column='id_pago_alquiler', blank=True, null=True)
     id_pago_orden = models.ForeignKey('ventas.PagosOrden', models.DO_NOTHING, db_column='id_pago_orden', blank=True, null=True)
@@ -29,7 +29,7 @@ class MovimientosCaja(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'movimientos_caja'
+        db_table = 'movimientos_cajas'
 
     def __str__(self):
         return f"Movimiento Caja {self.id_movimiento_caja} - Caja: {self.id_caja} - Importe: {self.importe} - Tipo: {self.tipo_movimiento} - Compra: {self.id_compra} - Pago Orden: {self.id_pago_orden} - Pago Alquiler: {self.id_pago_alquiler}"
