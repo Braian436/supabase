@@ -98,7 +98,7 @@ class PagosAlquileres(models.Model):
 
 class Aperturas(models.Model):
     id_apertura = models.AutoField(primary_key=True)
-    id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado')
+    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
     fecha_hora = models.DateTimeField()
     turno = models.CharField(max_length=10)
 

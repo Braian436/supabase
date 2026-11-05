@@ -2,7 +2,7 @@ from django.db import models
 
 class Cajas(models.Model):
     id_caja = models.AutoField(primary_key=True)
-    id_apertura = models.ForeignKey('empleados.Apertura', models.DO_NOTHING, db_column='id_apertura')
+    id_apertura = models.ForeignKey('empleados.Aperturas', models.DO_NOTHING, db_column='id_apertura')
     fecha_cierre = models.DateTimeField(blank=True, null=True)
     saldo_inicial = models.DecimalField(max_digits=12, decimal_places=2)
     saldo_esperado = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
