@@ -4,8 +4,8 @@ class Clientes(models.Model):
     id_cliente = models.BigAutoField(primary_key=True)
     telefono = models.CharField()
     estado = models.BooleanField(blank=True, null=True)
-    nombre = models.CharField(blank=True, null=True)
-    apellido = models.CharField(blank=True, null=True)
+    nombre = models.CharField()
+    apellido = models.CharField()
     email = models.CharField(unique=True, blank=True, null=True)
 
     class Meta:

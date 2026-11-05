@@ -1,13 +1,14 @@
 from django.db import models
+from django.db.models import Max
 
 class Turnos(models.Model):
     id_turno = models.BigAutoField(primary_key=True)
     fecha = models.DateField()
-    hora = models.TimeField(blank=True, null=True)
+    hora = models.TimeField()
     estado = models.CharField(blank=True, null=True)
     observacion = models.CharField(blank=True, null=True)
-    id_cliente = models.ForeignKey('clientes.Clientes', models.DO_NOTHING, db_column='id_cliente', blank=True, null=True)
-    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
+    id_cliente = models.ForeignKey('clientes.Clientes', models.DO_NOTHING, db_column='id_cliente')
+    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
 
     class Meta:
         managed = False
@@ -23,10 +24,23 @@ class Turnos(models.Model):
         return f"Turno: {fecha_turno} {hora_turno} | Estado: {estado_turno} | Observación: {observacion_turno} | Cliente: {cliente_turno} | Empleado: {empleado_turno}"
 
 class ServiciosTurnos(models.Model):
-    id_servicio_turno = models.IntegerField(primary_key=True)
-    orden = models.IntegerField(blank=True, null=True)
-    id_servicio = models.ForeignKey('Servicios', models.DO_NOTHING, db_column='id_servicio', blank=True, null=True)
-    id_turno = models.ForeignKey('Turnos', models.DO_NOTHING, db_column='id_turno', blank=True, null=True)
+    id_servicio_turno = models.AutoField(primary_key=True)
+    orden = models.PositiveIntegerField(editable=False)
+    id_servicio = models.ForeignKey('turnos.Servicios', models.DO_NOTHING, db_column='id_servicio')
+    id_turno = models.ForeignKey('turnos.Turnos', models.DO_NOTHING, db_column='id_turno')
+
+    def save(self, *args, **kwargs):
+        # Si es un registro nuevo (no tiene clave primaria aún)
+        if not self.pk and not self.orden:
+            # Obtiene el valor máximo actual de 'orden' para ese turno específico
+            max_orden = ServiciosTurnos.objects.filter(
+                id_turno=self.id_turno
+            ).aggregate(Max('orden'))['orden__max']
+
+            # Asigna 1 si es el primero del turno, o suma 1 al máximo existente
+            self.orden = (max_orden or 0) + 1
+
+        super().save(*args, **kwargs)
 
     class Meta:
         managed = False
@@ -39,12 +53,12 @@ class ServiciosTurnos(models.Model):
         return f"Servicio Turno: Orden {orden_servicio} | Servicio: {servicio} | Turno: {turno}"
 
 class Servicios(models.Model):
-    id_servicio = models.IntegerField(primary_key=True)
-    nombre = models.CharField(max_length=100, blank=True, null=True)
+    id_servicio = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=100)
     descripcion = models.CharField(max_length=250, blank=True, null=True)
     estado = models.BooleanField(blank=True, null=True)
-    precio = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
-    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado', blank=True, null=True)
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
+    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
 
     class Meta:
         managed = False
