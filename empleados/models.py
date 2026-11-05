@@ -19,7 +19,7 @@ class Empleados(models.Model):
     def __str__(self):
         return f"{self.nombre_empleado} (DNI: {self.dni}) | Rol: {self.id_rol}"
 
-class RegistrosDeAsistencias(models.Model):
+class RegistrosAsistencias(models.Model):
     id_asistencia = models.AutoField(primary_key=True)
     id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado')
     fecha = models.DateField()
@@ -31,7 +31,7 @@ class RegistrosDeAsistencias(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'registros_de_asistencias'
+        db_table = 'registros_asistencias'
 
     def __str__(self):
         return f"Registro de Asistencia: {self.id_empleado} - {self.fecha}"
@@ -43,7 +43,8 @@ class Liquidaciones(models.Model):
     fecha_generacion = models.DateField(blank=True, null=True)
     total_comision = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     total_a_pagar = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    estado = models.CharField(max_length=20, blank=True, null=True)
+    estado = models.BooleanField(blank=True, null=True)
+    fecha_fin = models.DateTimeField()
 
     class Meta:
         managed = False
@@ -70,7 +71,7 @@ class Alquileres(models.Model):
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField(blank=True, null=True)
     importe_acordado = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
-    observaciones = models.CharField(max_length=255, blank=True, null=True)
+    observacion = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         managed = False
@@ -86,7 +87,7 @@ class PagosAlquileres(models.Model):
     importe = models.DecimalField(max_digits=12, decimal_places=2)
     estado = models.BooleanField(blank=True, null=True)
     medio_pago = models.CharField(max_length=30, blank=True, null=True)
-    observaciones = models.CharField(max_length=255, blank=True, null=True)
+    observacion = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         managed = False
@@ -95,15 +96,15 @@ class PagosAlquileres(models.Model):
     def __str__(self):
         return f"Pago Alquiler: {self.id_alquiler} - {self.fecha} | Importe: {self.importe} | Estado: {'Pagado' if self.estado else 'Pendiente'}"
 
-class Apertura(models.Model):
+class Aperturas(models.Model):
     id_apertura = models.AutoField(primary_key=True)
-    id_empleado = models.ForeignKey('Empleados', models.DO_NOTHING, db_column='id_empleado')
+    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
     fecha_hora = models.DateTimeField()
     turno = models.CharField(max_length=10)
 
     class Meta:
         managed = False
-        db_table = 'apertura'
+        db_table = 'aperturas'
 
     def __str__(self):
         return f"Apertura: {self.id_empleado} - {self.fecha_hora} | Turno: {self.turno}"

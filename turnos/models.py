@@ -71,3 +71,15 @@ class Servicios(models.Model):
         precio_servicio = f"${self.precio}" if self.precio is not None else "Precio no disponible"
         empleado_servicio = str(self.id_empleado) if self.id_empleado else "Empleado no asignado"
         return f"Servicio: {nombre_servicio} | Descripción: {descripcion_servicio} | Estado: {estado_servicio} | Precio: {precio_servicio} | Empleado: {empleado_servicio}"
+
+class HistorialesTurnos(models.Model):
+    id_historial = models.BigAutoField(primary_key=True)
+    id_turno = models.ForeignKey('turnos.Turnos', models.DO_NOTHING, db_column='id_turno')
+    id_orden = models.ForeignKey('ventas.Ordenes', models.DO_NOTHING, db_column='id_orden', blank=True, null=True)
+    fecha_cambio = models.DateTimeField(blank=True, null=True)
+    estado = models.CharField(blank=True, null=True)
+    motivo = models.CharField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'historiales_turnos'
