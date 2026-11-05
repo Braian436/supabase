@@ -19,7 +19,7 @@ class Cajas(models.Model):
 class MovimientosCajas(models.Model):
     id_movimiento_caja = models.AutoField(primary_key=True)
     id_pago_alquiler = models.ForeignKey('empleados.PagosAlquileres', models.DO_NOTHING, db_column='id_pago_alquiler', blank=True, null=True)
-    id_pago_orden = models.ForeignKey('ventas.PagosOrden', models.DO_NOTHING, db_column='id_pago_orden', blank=True, null=True)
+    id_pago_orden = models.ForeignKey('ventas.PagosOrdenes', models.DO_NOTHING, db_column='id_pago_orden', blank=True, null=True)
     id_compra = models.ForeignKey('compras.Compras', models.DO_NOTHING, db_column='id_compra', blank=True, null=True)
     id_caja = models.ForeignKey('cajas.Cajas', models.DO_NOTHING, db_column='id_caja')
     importe = models.DecimalField(max_digits=10, decimal_places=2)
