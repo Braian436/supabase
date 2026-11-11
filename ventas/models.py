@@ -8,9 +8,8 @@ class Ordenes(models.Model):
     descuento = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     total_final = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     observacion = models.CharField(max_length=20, blank=True, null=True)
-    id_turno = models.ForeignKey('turnos.Turnos', models.DO_NOTHING, db_column='id_turno', blank=True, null=True)
-    id_apertura = models.ForeignKey('empleados.Aperturas', models.DO_NOTHING, db_column='id_apertura', blank=True, null=True)
-
+    id_apertura = models.ForeignKey('empleados.Aperturas', models.DO_NOTHING, db_column='id_apertura')
+    id_historial = models.ForeignKey('turnos.HistorialesTurnos', models.DO_NOTHING, db_column='id_historial', blank=True, null=True)
     class Meta:
         managed = False
         db_table = 'ordenes'

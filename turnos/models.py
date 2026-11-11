@@ -75,7 +75,7 @@ class Servicios(models.Model):
 class HistorialesTurnos(models.Model):
     id_historial = models.BigAutoField(primary_key=True)
     id_turno = models.ForeignKey('turnos.Turnos', models.DO_NOTHING, db_column='id_turno')
-    id_orden = models.ForeignKey('ventas.Ordenes', models.DO_NOTHING, db_column='id_orden', blank=True, null=True)
+    id_orden = models.ForeignKey('ventas.Ordenes', models.DO_NOTHING, db_column='id_orden')
     fecha_cambio = models.DateTimeField(blank=True, null=True)
     estado = models.CharField(blank=True, null=True)
     motivo = models.CharField(blank=True, null=True)
