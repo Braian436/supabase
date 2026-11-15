@@ -18,16 +18,8 @@ class Servicios(models.Model):
 
 class ServiciosTurnos(models.Model):
     id_servicio_turno = models.AutoField(primary_key=True)
-    id_turno = models.ForeignKey(
-        'turnos.Turnos',
-        models.DO_NOTHING,
-        db_column='id_turno',
-    )
-    id_servicio = models.ForeignKey(
-        'servicios.Servicios',
-        models.DO_NOTHING,
-        db_column='id_servicio',
-    )
+    id_turno = models.ForeignKey('turnos.Turnos', models.DO_NOTHING, db_column='id_turno')
+    id_servicio = models.ForeignKey(Servicios, models.DO_NOTHING, db_column='id_servicio')
 
     class Meta:
         managed = False
@@ -41,16 +33,8 @@ class ServiciosTurnos(models.Model):
 
 class EmpleadosServicios(models.Model):
     id_empleado_servicio = models.AutoField(primary_key=True)
-    id_empleado = models.ForeignKey(
-        'empleados.Empleados',
-        models.DO_NOTHING,
-        db_column='id_empleado',
-    )
-    id_servicio = models.ForeignKey(
-        'servicios.Servicios',
-        models.DO_NOTHING,
-        db_column='id_servicio',
-    )
+    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
+    id_servicio = models.ForeignKey(Servicios, models.DO_NOTHING, db_column='id_servicio')
     descripcion = models.CharField(max_length=100)
 
     class Meta:

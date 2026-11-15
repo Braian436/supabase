@@ -4,7 +4,7 @@ from django.db import models
 class Compras(models.Model):
     id_compra = models.AutoField(primary_key=True)
     total = models.DecimalField(max_digits=12, decimal_places=2)
-    fecha = models.DateField()
+    fecha = models.DateTimeField()
 
     class Meta:
         managed = False
@@ -16,20 +16,12 @@ class Compras(models.Model):
 
 class DetallesCompras(models.Model):
     id_detalle_compra = models.AutoField(primary_key=True)
-    id_compra = models.ForeignKey(
-        'compras.Compras',
-        models.DO_NOTHING,
-        db_column='id_compra',
-    )
-    id_producto = models.ForeignKey(
-        'productos.Productos',
-        models.DO_NOTHING,
-        db_column='id_producto',
-    )
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2)
-    precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
+    id_compra = models.ForeignKey(Compras, models.DO_NOTHING, db_column='id_compra')
+    id_producto = models.ForeignKey('productos.Productos', models.DO_NOTHING, db_column='id_producto')
     cantidad = models.IntegerField()
+    precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
     importe = models.DecimalField(max_digits=12, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2)
 
     class Meta:
         managed = False

@@ -3,9 +3,9 @@ from django.db import models
 
 class Clientes(models.Model):
     id_cliente = models.AutoField(primary_key=True)
+    telefono = models.CharField(max_length=18)
     nombre = models.CharField(max_length=80)
     apellido = models.CharField(max_length=50)
-    telefono = models.CharField(max_length=18)
     fecha_nacimiento = models.DateField(blank=True, null=True)
 
     class Meta:
@@ -17,33 +17,12 @@ class Clientes(models.Model):
 
 
 class Turnos(models.Model):
-    ESTADO_PENDIENTE = 'pendiente'
-    ESTADO_EN_CURSO = 'en curso'
-    ESTADO_FINALIZADO = 'finalizado'
-    ESTADOS = [
-        (ESTADO_PENDIENTE, 'Pendiente'),
-        (ESTADO_EN_CURSO, 'En curso'),
-        (ESTADO_FINALIZADO, 'Finalizado'),
-    ]
-
     id_turno = models.AutoField(primary_key=True)
-    id_cliente = models.ForeignKey(
-        'turnos.Clientes',
-        models.DO_NOTHING,
-        db_column='id_cliente',
-    )
-    id_empleado = models.ForeignKey(
-        'empleados.Empleados',
-        models.DO_NOTHING,
-        db_column='id_empleado',
-    )
+    id_cliente = models.ForeignKey(Clientes, models.DO_NOTHING, db_column='id_cliente')
+    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
     fecha = models.DateField()
     hora = models.TimeField()
-    estado = models.CharField(
-        max_length=25,
-        choices=ESTADOS,
-        default=ESTADO_PENDIENTE,
-    )
+    estado = models.CharField(max_length=25)
 
     class Meta:
         managed = False
@@ -60,22 +39,10 @@ class Turnos(models.Model):
 
 class TurnosExpress(models.Model):
     id_express = models.AutoField(primary_key=True)
-    id_cliente = models.ForeignKey(
-        'turnos.Clientes',
-        models.DO_NOTHING,
-        db_column='id_cliente',
-    )
-    id_empleado = models.ForeignKey(
-        'empleados.Empleados',
-        models.DO_NOTHING,
-        db_column='id_empleado',
-    )
-    id_servicio = models.ForeignKey(
-        'servicios.Servicios',
-        models.DO_NOTHING,
-        db_column='id_servicio',
-    )
-    fecha = models.DateField()
+    id_cliente = models.ForeignKey(Clientes, models.DO_NOTHING, db_column='id_cliente')
+    id_servicio = models.ForeignKey('servicios.Servicios', models.DO_NOTHING, db_column='id_servicio')
+    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
+    fecha = models.DateTimeField()
     hora = models.TimeField()
     hora_fin = models.TimeField()
 

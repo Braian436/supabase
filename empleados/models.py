@@ -1,26 +1,9 @@
 from django.db import models
 
 
-class Roles(models.Model):
-    id_rol = models.AutoField(primary_key=True)
-    nombre = models.CharField(max_length=20)
-    descripcion = models.CharField(max_length=240, blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'roles'
-
-    def __str__(self):
-        return f"Rol: {self.nombre} - {self.descripcion}"
-
-
 class Empleados(models.Model):
     id_empleado = models.AutoField(primary_key=True)
-    id_rol = models.ForeignKey(
-        'empleados.Roles',
-        models.DO_NOTHING,
-        db_column='id_rol',
-    )
+    id_rol = models.ForeignKey('Roles', models.DO_NOTHING, db_column='id_rol')
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
     dni = models.CharField(max_length=20, unique=True)
@@ -35,15 +18,24 @@ class Empleados(models.Model):
         return f"{self.nombre} {self.apellido} (DNI: {self.dni}) | Rol: {self.id_rol}"
 
 
+class Roles(models.Model):
+    id_rol = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=20)
+    descripcion = models.CharField(max_length=240, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'roles'
+
+    def __str__(self):
+        return f"Rol: {self.nombre} - {self.descripcion}"
+
+
 class RegistrosAsistencias(models.Model):
-    id_asistencia = models.AutoField(primary_key=True)
-    id_empleado = models.ForeignKey(
-        'empleados.Empleados',
-        models.DO_NOTHING,
-        db_column='id_empleado',
-    )
-    fecha = models.DateField()
-    hora_entrada = models.TimeField()
+    id_asistencias = models.AutoField(primary_key=True)
+    id_empleado = models.ForeignKey(Empleados, models.DO_NOTHING, db_column='id_empleado')
+    fecha = models.DateTimeField()
+    hora_entrada = models.TimeField(blank=True, null=True)
     hora_salida = models.TimeField()
     fecha_modificacion = models.DateTimeField()
     estado = models.CharField(max_length=20)
@@ -59,14 +51,10 @@ class RegistrosAsistencias(models.Model):
 
 class LiquidacionesSemanales(models.Model):
     id_liquidacion = models.AutoField(primary_key=True)
-    id_empleado = models.ForeignKey(
-        'empleados.Empleados',
-        models.DO_NOTHING,
-        db_column='id_empleado',
-    )
-    fecha_inicio = models.DateTimeField()
+    id_empleado = models.ForeignKey(Empleados, models.DO_NOTHING, db_column='id_empleado')
+    fecha_generacion = models.DateTimeField()
     fecha_fin = models.DateTimeField()
-    fecha_generacion = models.DateField()
+    fecha_inicio = models.DateTimeField()
     total_comision = models.DecimalField(max_digits=12, decimal_places=2)
     total_a_pagar = models.DecimalField(max_digits=12, decimal_places=2)
     estado = models.BooleanField()
@@ -81,15 +69,11 @@ class LiquidacionesSemanales(models.Model):
 
 class UsuariosSistemas(models.Model):
     id_usuario = models.AutoField(primary_key=True)
-    username = models.CharField(max_length=150, unique=True)
+    id_empleado = models.OneToOneField(Empleados, models.DO_NOTHING, db_column='id_empleado')
     password = models.CharField(max_length=200)
-    id_empleado = models.ForeignKey(
-        'empleados.Empleados',
-        models.DO_NOTHING,
-        db_column='id_empleado',
-    )
-    ultimo_acceso = models.DateTimeField(blank=True, null=True)
+    username = models.CharField(max_length=150, unique=True)
     fecha_creacion = models.DateTimeField()
+    ultimo_acceso = models.DateTimeField(blank=True, null=True)
     estado = models.BooleanField(blank=True, null=True)
 
     class Meta:

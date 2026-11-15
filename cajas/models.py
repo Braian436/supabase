@@ -3,32 +3,13 @@ from django.db import models
 
 class Cajas(models.Model):
     id_caja = models.AutoField(primary_key=True)
-    id_empleado = models.ForeignKey(
-        'empleados.Empleados',
-        models.DO_NOTHING,
-        db_column='id_empleado',
-    )
+    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
     fecha_inicio = models.DateTimeField()
     fecha_cierre = models.DateTimeField(blank=True, null=True)
     saldo_inicial = models.DecimalField(max_digits=12, decimal_places=2)
-    saldo_esperado = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        blank=True,
-        null=True,
-    )
-    saldo_real = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        blank=True,
-        null=True,
-    )
-    diferencia = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        blank=True,
-        null=True,
-    )
+    saldo_esperado = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    saldo_real = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    diferencia = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
 
     class Meta:
         managed = False
@@ -40,29 +21,13 @@ class Cajas(models.Model):
 
 class MovimientosCajas(models.Model):
     id_movimiento_caja = models.AutoField(primary_key=True)
-    id_venta = models.ForeignKey(
-        'ventas.Ventas',
-        models.DO_NOTHING,
-        db_column='id_venta',
-        blank=True,
-        null=True,
-    )
-    id_compra = models.ForeignKey(
-        'compras.Compras',
-        models.DO_NOTHING,
-        db_column='id_compra',
-        blank=True,
-        null=True,
-    )
-    id_caja = models.ForeignKey(
-        'cajas.Cajas',
-        models.DO_NOTHING,
-        db_column='id_caja',
-    )
-    tipo_movimiento = models.CharField(max_length=150)
+    id_caja = models.ForeignKey(Cajas, models.DO_NOTHING, db_column='id_caja')
+    id_venta = models.ForeignKey('ventas.Ventas', models.DO_NOTHING, db_column='id_venta', blank=True, null=True)
+    id_compra = models.ForeignKey('compras.Compras', models.DO_NOTHING, db_column='id_compra', blank=True, null=True)
     total = models.DecimalField(max_digits=12, decimal_places=2)
-    concepto = models.CharField(max_length=200)
     fecha = models.DateTimeField()
+    tipo_movimiento = models.CharField(max_length=150)
+    concepto = models.CharField(max_length=200)
 
     class Meta:
         managed = False
