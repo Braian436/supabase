@@ -2,17 +2,15 @@ from django.db import models
 
 class Compras(models.Model):
     id_compra = models.AutoField(primary_key=True)
-    nro_ticket = models.IntegerField(unique=True)
-    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
-    total = models.DecimalField(max_digits=10, decimal_places=2)
-    fecha = models.DateField()
+    total = models.DecimalField(max_digits=65535, decimal_places=65535)
+    fecha = models.DateTimeField()
 
     class Meta:
         managed = False
         db_table = 'compras'
 
-    def __str__(self):
-        return f"Compra {self.id_compra} - Ticket: {self.nro_ticket} - Total: {self.total}"
+    # def __str__(self):
+    #     return f"Compra {self.id_compra} - Ticket: {self.nro_ticket} - Total: {self.total}"
 
 class DetallesCompras(models.Model):
     id_detalle_compra = models.AutoField(primary_key=True)

@@ -2,19 +2,20 @@ from django.db import models
 
 class Cajas(models.Model):
     id_caja = models.AutoField(primary_key=True)
-    id_apertura = models.ForeignKey('empleados.Aperturas', models.DO_NOTHING, db_column='id_apertura')
+    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
+    fecha_inicio = models.DateTimeField()
     fecha_cierre = models.DateTimeField(blank=True, null=True)
-    saldo_inicial = models.DecimalField(max_digits=12, decimal_places=2)
-    saldo_esperado = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
-    saldo_real = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
-    diferencia = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    saldo_inicial = models.DecimalField(max_digits=65535, decimal_places=65535)
+    saldo_esperado = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    saldo_real = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
+    diferencia = models.DecimalField(max_digits=65535, decimal_places=65535, blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'cajas'
 
-    def __str__(self):
-        return f"Caja {self.id_caja} - Apertura: {self.id_apertura} - Cierre: {self.fecha_cierre}"
+    # def __str__(self):
+    #     return f"Caja {self.id_caja} - Apertura: {self.id_apertura} - Cierre: {self.fecha_cierre}"
 
 class MovimientosCajas(models.Model):
     id_movimiento_caja = models.AutoField(primary_key=True)
