@@ -1,16 +1,12 @@
 from django.db import models
 
 class Clientes(models.Model):
-    id_cliente = models.BigAutoField(primary_key=True)
+    id_cliente = models.AutoField(primary_key=True)
     telefono = models.CharField()
-    estado = models.BooleanField(blank=True, null=True)
     nombre = models.CharField()
     apellido = models.CharField()
-    email = models.CharField(unique=True, blank=True, null=True)
+    fecha_nacimiento = models.DateField(blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'clientes'
-
-    def __str__(self):
-        return f"{self.nombre} {self.apellido} - {self.email}"
