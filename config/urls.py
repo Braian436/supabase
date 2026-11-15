@@ -15,7 +15,7 @@ urlpatterns = [
     
     # Todas las rutas de la API REST quedan agrupadas bajo el prefijo /api/.
     # A medida que agreguen mas endpoints (por app), inclúyanlos aca mismo,
-    # por ejemplo: path('api/clientes/', include('clientes.urls')).
+    # por ejemplo: path('api/turnos/', include('turnos.api.urls')).
     path('api/', include('api.urls')),
 
     path('api/', include('empleados.api.urls')),

@@ -74,7 +74,6 @@ class TurnosApiTests(SimpleTestCase):
                     'nombre': 'Ada',
                     'apellido': 'Lovelace',
                     'telefono': '555123',
-                    'email': 'ada@example.com',
                 },
                 format='json',
             )
@@ -119,7 +118,6 @@ class TurnosApiTests(SimpleTestCase):
                     'nombre': 'Ada',
                     'apellido': 'Lovelace',
                     'telefono': '555123',
-                    'email': 'ada@example.com',
                 },
                 format='json',
             )
@@ -130,11 +128,10 @@ class TurnosApiTests(SimpleTestCase):
         atomic.assert_called_once_with()
         employees.assert_called_once_with()
         get_or_create.assert_called_once_with(
-            email='ada@example.com',
+            telefono='555123',
             defaults={
                 'nombre': 'Ada',
                 'apellido': 'Lovelace',
-                'telefono': '555123',
             },
         )
 
@@ -165,7 +162,6 @@ class TurnosApiTests(SimpleTestCase):
                     'nombre': 'Ada',
                     'apellido': 'Lovelace',
                     'telefono': '555123',
-                    'email': 'ada@example.com',
                 },
                 format='json',
             )

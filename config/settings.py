@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     'productos',
     'empleados',
     'turnos',
-    'clientes',
+    'servicios',
     'ventas',
     'cajas',
     'compras',

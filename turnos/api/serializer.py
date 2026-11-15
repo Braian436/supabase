@@ -34,4 +34,3 @@ class ReservaTurnoSerializer(serializers.Serializer):
     nombre = serializers.CharField(allow_blank=False, trim_whitespace=True)
     apellido = serializers.CharField(allow_blank=False, trim_whitespace=True)
     telefono = serializers.CharField(allow_blank=False, trim_whitespace=True)
-    email = serializers.EmailField()

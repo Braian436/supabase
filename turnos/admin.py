@@ -1,8 +1,7 @@
 from django.contrib import admin
 
-from .models import Turnos, ServiciosTurnos, Servicios, HistorialesTurnos
+from .models import Clientes, Turnos, TurnosExpress
 
+admin.site.register(Clientes)
 admin.site.register(Turnos)
-admin.site.register(ServiciosTurnos)
-admin.site.register(Servicios)
-admin.site.register(HistorialesTurnos)
+admin.site.register(TurnosExpress)

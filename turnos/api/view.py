@@ -5,9 +5,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from clientes.models import Clientes
 from empleados.models import Empleados
-from turnos.models import Turnos
+from turnos.models import Clientes, Turnos
 from turnos.api.serializer import (
     DisponibilidadQuerySerializer,
     ReservaTurnoSerializer,
@@ -105,11 +104,10 @@ class ReservarTurnoAPIView(APIView):
                     )
 
                 cliente, _ = Clientes.objects.get_or_create(
-                    email=data['email'],
+                    telefono=data['telefono'],
                     defaults={
                         'nombre': data['nombre'],
                         'apellido': data['apellido'],
-                        'telefono': data['telefono'],
                     },
                 )
                 turno = Turnos.objects.create(
