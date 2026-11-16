@@ -28,6 +28,7 @@ class MovimientosCajas(models.Model):
     fecha = models.DateTimeField()
     tipo_movimiento = models.CharField(max_length=150)
     concepto = models.CharField(max_length=200)
+    id_express = models.ForeignKey('turnos.TurnosExpress', models.DO_NOTHING, db_column='id_express', blank=True, null=True)
 
     class Meta:
         managed = False

@@ -42,6 +42,7 @@ class DetallesServicios(models.Model):
     precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
     cantidad = models.IntegerField()
     importe = models.DecimalField(max_digits=12, decimal_places=2)
+    id_express = models.ForeignKey('turnos.TurnosExpress', models.DO_NOTHING, db_column='id_express', blank=True, null=True)
 
     class Meta:
         managed = False
