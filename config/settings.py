@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 
     # Terceros
     'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders',
 
     # Apps propias del proyecto
@@ -51,7 +52,7 @@ INSTALLED_APPS = [
     'productos',
     'empleados',
     'turnos',
-    'clientes',
+    'servicios',
     'ventas',
     'cajas',
     'compras',
@@ -142,6 +143,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Django REST Framework (configuración mínima, para cuando empiecen con la API)
 # --------------------------------------------------------------------------
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
 }

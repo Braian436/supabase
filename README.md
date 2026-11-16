@@ -74,14 +74,14 @@ suyos.
 
 Para agregar un endpoint real sobre un modelo de su organización:
 
-1. Definan el modelo en la app correspondiente (por ejemplo, `Cliente` en una
-   app `clientes`).
+1. Definan el modelo en la app correspondiente (por ejemplo, `Clientes` en la
+   app `turnos`).
 2. Creen un archivo `serializers.py` en esa app, con una clase
    `ClienteSerializer(serializers.ModelSerializer)`.
 3. Creen una vista (por ejemplo, `ClienteListView(generics.ListCreateAPIView)`)
    que use ese serializer.
 4. Registren la ruta en `config/urls.py`, agrupada bajo `/api/`, por ejemplo:
-   `path('api/clientes/', include('clientes.urls'))`.
+   `path('api/turnos/', include('turnos.urls'))`.
 
 ## Adaptar a su proyecto
 

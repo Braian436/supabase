@@ -1,14 +1,28 @@
 from django.db import models
-from django.db.models import Max
+
+
+class Clientes(models.Model):
+    id_cliente = models.AutoField(primary_key=True)
+    telefono = models.CharField(max_length=18)
+    nombre = models.CharField(max_length=80)
+    apellido = models.CharField(max_length=50)
+    fecha_nacimiento = models.DateField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'clientes'
+
+    def __str__(self):
+        return f"{self.nombre} {self.apellido} - Tel: {self.telefono}"
+
 
 class Turnos(models.Model):
-    id_turno = models.BigAutoField(primary_key=True)
+    id_turno = models.AutoField(primary_key=True)
+    id_cliente = models.ForeignKey(Clientes, models.DO_NOTHING, db_column='id_cliente')
+    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
     fecha = models.DateField()
     hora = models.TimeField()
-    estado = models.CharField(blank=True, null=True)
-    observacion = models.CharField(blank=True, null=True)
-    id_cliente = models.ForeignKey('clientes.Clientes', models.DO_NOTHING, db_column='id_cliente')
-    id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
+    estado = models.CharField(max_length=25)
 
     class Meta:
         managed = False
@@ -18,68 +32,30 @@ class Turnos(models.Model):
         fecha_turno = self.fecha.strftime("%d/%m/%Y") if self.fecha else "Fecha no disponible"
         hora_turno = self.hora.strftime("%H:%M") if self.hora else "Hora no disponible"
         estado_turno = self.estado or "Estado no disponible"
-        observacion_turno = self.observacion or "Sin observación"
         cliente_turno = str(self.id_cliente) if self.id_cliente else "Cliente no asignado"
         empleado_turno = str(self.id_empleado) if self.id_empleado else "Empleado no asignado"
-        return f"Turno: {fecha_turno} {hora_turno} | Estado: {estado_turno} | Observación: {observacion_turno} | Cliente: {cliente_turno} | Empleado: {empleado_turno}"
+        return f"Turno: {fecha_turno} {hora_turno} | Estado: {estado_turno} | Cliente: {cliente_turno} | Empleado: {empleado_turno}"
 
-class ServiciosTurnos(models.Model):
-    id_servicio_turno = models.AutoField(primary_key=True)
-    orden = models.PositiveIntegerField(editable=False)
-    id_servicio = models.ForeignKey('turnos.Servicios', models.DO_NOTHING, db_column='id_servicio')
-    id_turno = models.ForeignKey('turnos.Turnos', models.DO_NOTHING, db_column='id_turno')
 
-    def save(self, *args, **kwargs):
-        # Si es un registro nuevo (no tiene clave primaria aún)
-        if not self.pk and not self.orden:
-            # Obtiene el valor máximo actual de 'orden' para ese turno específico
-            max_orden = ServiciosTurnos.objects.filter(
-                id_turno=self.id_turno
-            ).aggregate(Max('orden'))['orden__max']
-
-            # Asigna 1 si es el primero del turno, o suma 1 al máximo existente
-            self.orden = (max_orden or 0) + 1
-
-        super().save(*args, **kwargs)
-
-    class Meta:
-        managed = False
-        db_table = 'servicios_turnos'
-
-    def __str__(self):
-        orden_servicio = self.orden if self.orden is not None else "Orden no disponible"
-        servicio = str(self.id_servicio) if self.id_servicio else "Servicio no asignado"
-        turno = str(self.id_turno) if self.id_turno else "Turno no asignado"
-        return f"Servicio Turno: Orden {orden_servicio} | Servicio: {servicio} | Turno: {turno}"
-
-class Servicios(models.Model):
-    id_servicio = models.AutoField(primary_key=True)
-    nombre = models.CharField(max_length=100)
-    descripcion = models.CharField(max_length=250, blank=True, null=True)
-    estado = models.BooleanField(blank=True, null=True)
-    precio = models.DecimalField(max_digits=10, decimal_places=2)
+class TurnosExpress(models.Model):
+    id_express = models.AutoField(primary_key=True)
+    id_cliente = models.ForeignKey('Clientes', models.DO_NOTHING, db_column='id_cliente')
+    id_servicio = models.ForeignKey('servicios.Servicios', models.DO_NOTHING, db_column='id_servicio')
     id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
+    fecha = models.DateTimeField()
+    hora = models.TimeField()
+    hora_fin = models.TimeField()
+    estado = models.TextField()
 
     class Meta:
         managed = False
-        db_table = 'servicios'
+        db_table = 'turnos_express'
 
     def __str__(self):
-        nombre_servicio = self.nombre or "Servicio sin nombre"
-        descripcion_servicio = self.descripcion or "Sin descripción"
-        estado_servicio = "Activo" if self.estado else "Inactivo"
-        precio_servicio = f"${self.precio}" if self.precio is not None else "Precio no disponible"
-        empleado_servicio = str(self.id_empleado) if self.id_empleado else "Empleado no asignado"
-        return f"Servicio: {nombre_servicio} | Descripción: {descripcion_servicio} | Estado: {estado_servicio} | Precio: {precio_servicio} | Empleado: {empleado_servicio}"
-
-class HistorialesTurnos(models.Model):
-    id_historial = models.BigAutoField(primary_key=True)
-    id_turno = models.ForeignKey('turnos.Turnos', models.DO_NOTHING, db_column='id_turno')
-    id_orden = models.ForeignKey('ventas.Ordenes', models.DO_NOTHING, db_column='id_orden')
-    fecha_cambio = models.DateTimeField(blank=True, null=True)
-    estado = models.CharField(blank=True, null=True)
-    motivo = models.CharField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'historiales_turnos'
+        fecha_express = self.fecha.strftime("%d/%m/%Y") if self.fecha else "Fecha no disponible"
+        hora_express = self.hora.strftime("%H:%M") if self.hora else "Hora no disponible"
+        hora_fin_express = self.hora_fin.strftime("%H:%M") if self.hora_fin else "Hora no disponible"
+        cliente_express = str(self.id_cliente) if self.id_cliente else "Cliente no asignado"
+        empleado_express = str(self.id_empleado) if self.id_empleado else "Empleado no asignado"
+        servicio_express = str(self.id_servicio) if self.id_servicio else "Servicio no asignado"
+        return f"Turno Express: {fecha_express} {hora_express}-{hora_fin_express} | Cliente: {cliente_express} | Empleado: {empleado_express} | Servicio: {servicio_express}"
