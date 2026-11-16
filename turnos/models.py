@@ -39,12 +39,13 @@ class Turnos(models.Model):
 
 class TurnosExpress(models.Model):
     id_express = models.AutoField(primary_key=True)
-    id_cliente = models.ForeignKey(Clientes, models.DO_NOTHING, db_column='id_cliente')
+    id_cliente = models.ForeignKey('Clientes', models.DO_NOTHING, db_column='id_cliente')
     id_servicio = models.ForeignKey('servicios.Servicios', models.DO_NOTHING, db_column='id_servicio')
     id_empleado = models.ForeignKey('empleados.Empleados', models.DO_NOTHING, db_column='id_empleado')
     fecha = models.DateTimeField()
     hora = models.TimeField()
     hora_fin = models.TimeField()
+    estado = models.TextField()
 
     class Meta:
         managed = False
