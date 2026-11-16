@@ -4,12 +4,13 @@ from django.db import models
 class Ventas(models.Model):
     id_venta = models.AutoField(primary_key=True)
     id_cliente = models.ForeignKey('turnos.Clientes', models.DO_NOTHING, db_column='id_cliente')
-    id_turno = models.ForeignKey('turnos.Turnos', models.DO_NOTHING, db_column='id_turno')
+    id_turno = models.ForeignKey('turnos.Turnos', models.DO_NOTHING, db_column='id_turno', blank=True, null=True)
     estado = models.BooleanField()
     fecha_venta = models.DateTimeField()
     fecha_cierre = models.DateTimeField()
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
     descuento = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    id_express = models.ForeignKey('turnos.TurnosExpress', models.DO_NOTHING, db_column='id_express', blank=True, null=True)
 
     class Meta:
         managed = False
