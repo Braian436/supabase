@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.db import transaction
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -24,6 +25,8 @@ def api_error(code, detail, http_status):
 
 
 class DisponibilidadTurnosAPIView(APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request):
         query = request.query_params.copy()
         query.setlist('horas', request.query_params.getlist('horas'))
@@ -74,6 +77,8 @@ class DisponibilidadTurnosAPIView(APIView):
 
 
 class ReservarTurnoAPIView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         serializer = ReservaTurnoSerializer(data=request.data)
         if not serializer.is_valid():

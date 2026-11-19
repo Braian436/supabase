@@ -43,7 +43,7 @@ INSTALLED_APPS = [
 
     # Terceros
     'rest_framework',
-    'rest_framework_simplejwt',
+    'rest_framework.authtoken',
     'corsheaders',
 
     # Apps propias del proyecto
@@ -140,14 +140,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # --------------------------------------------------------------------------
-# Django REST Framework (configuración mínima, para cuando empiecen con la API)
+# Django REST Framework (autenticación y permisos de la API)
 # --------------------------------------------------------------------------
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    'DEFAULT_THROTTLE_RATES': {
+        'login': '10/15m',
+    },
 }
 
 CORS_ALLOWED_ORIGINS = [

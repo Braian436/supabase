@@ -4,9 +4,8 @@ URL configuration for config project.
 from django.contrib import admin
 from django.urls import path, include
 
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
 from core.views import home
+from api.views import AuthMeAPIView, LogoutAPIView, TokenLoginAPIView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -21,7 +20,7 @@ urlpatterns = [
     path('api/', include('empleados.api.urls')),
     path('api/', include('turnos.api.urls')),
 
-    # Autenticación JWT (usada por el login del frontend).
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/auth/token/', TokenLoginAPIView.as_view(), name='api-token-auth'),
+    path('api/auth/me/', AuthMeAPIView.as_view(), name='api-auth-me'),
+    path('api/auth/logout/', LogoutAPIView.as_view(), name='api-auth-logout'),
 ]
