@@ -89,6 +89,21 @@ Para agregar un endpoint real sobre un modelo de su organización:
 - No se agregan columnas ni migraciones: los precios provienen de compras y
   ventas; el modelo de productos conserva sus campos y relaciones actuales.
 
+### Compras
+
+- `GET /api/compras/`: historial paginado de compras con sus productos,
+  cantidades y costos unitarios.
+- `POST /api/compras/`: registra una compra y aumenta el stock dentro de una
+  transacción. El importe por línea y el total se calculan en el servidor.
+
+  ```json
+  {
+    "detalles": [
+      { "id_producto": 1, "cantidad": 4, "precio_unitario": "1250.00" }
+    ]
+  }
+  ```
+
 ### Acceso a la API
 
 Por el momento, las rutas de administración de empleados, roles, grupos y
