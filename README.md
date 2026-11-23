@@ -34,30 +34,24 @@
    ```
    Debería devolver un JSON simple confirmando que la API funciona.
 
-5. Para crear un superusuario (usuario admin de Django):
-   ```
-   docker compose exec web python manage.py createsuperuser
-   ```
-   Después entren a `http://localhost:8000/admin`.
-
-6. Para entrar a una terminal dentro del contenedor (correr comandos de manage.py, instalar algo, etc.):
+5. Para entrar a una terminal dentro del contenedor (correr comandos de manage.py, instalar algo, etc.):
    ```
    docker compose exec web bash
    ```
 
-7. Para crear una app nueva de Django (por ejemplo, la app principal de su sistema):
+6. Para crear una app nueva de Django (por ejemplo, la app principal de su sistema):
    ```
    docker compose exec web python manage.py startapp nombre_app
    ```
    No se olviden de agregarla a `INSTALLED_APPS` en `config/settings.py`.
 
-8. Para crear y aplicar migraciones después de modificar un modelo:
+7. Para crear y aplicar migraciones después de modificar un modelo:
    ```
    docker compose exec web python manage.py makemigrations
    docker compose exec web python manage.py migrate
    ```
 
-9. Para apagar todo:
+8. Para apagar todo:
    ```
    docker compose down
    ```
@@ -83,68 +77,12 @@ Para agregar un endpoint real sobre un modelo de su organización:
 4. Registren la ruta en `config/urls.py`, agrupada bajo `/api/`, por ejemplo:
    `path('api/turnos/', include('turnos.urls'))`.
 
-### Autenticación y permisos por grupo
+### Acceso a la API
 
-El inicio de sesión usa el usuario estándar de Django (`auth_user`) y tokens de
-`rest_framework.authtoken`; no se debe autenticar usando la tabla
-`usuarios_sistemas`. Cada usuario debe pertenecer al grupo que define su rol.
-
-Después de levantar el proyecto, creen o actualicen los permisos y grupos:
-
-```bash
-docker compose exec web python manage.py migrate
-docker compose exec web python manage.py crear_roles
-```
-
-Los grupos son `Administrador`, `Cajero` y `Barbero`. El comando es idempotente:
-se puede volver a ejecutar al cambiar los permisos. Si encuentra el grupo
-anterior `Dueño`, migra sus usuarios al grupo `Administrador`.
-
-Creen usuarios con `createsuperuser` o desde el admin de Django y asígnenles
-uno de esos grupos en `/admin/`. Para vincular el usuario de autenticación con
-un empleado, el campo `empleados.id_usuario` debe apuntar al mismo usuario de
-Django; esa relación permite limitar las liquidaciones del barbero a las
-propias. El campo `stock_actual` pertenece al modelo `Productos`; no hay un
-modelo separado para stock.
-
-El cliente obtiene un token enviando credenciales:
-
-```http
-POST /api/auth/token/
-Content-Type: application/json
-
-{"username": "usuario", "password": "contraseña"}
-```
-
-La respuesta contiene `{"token": "..."}`. En las siguientes solicitudes
-protegidas envíen `Authorization: Token <token>`. `GET /api/auth/me/` devuelve
-el usuario, sus grupos y permisos efectivos. `POST /api/auth/logout/` revoca
-el token actual. Los tokens no vencen automáticamente; deben mantenerse en
-memoria en el cliente y revocarse al cerrar sesión. El login está limitado a
-10 intentos por IP cada 15 minutos. En despliegues con varias instancias,
-configuren un cache compartido para que el límite se aplique entre ellas.
-
-`Administrador` tiene todos los permisos de los modelos del proyecto. El
-cajero puede ver, agregar y modificar clientes, turnos, servicios, ventas,
-cajas y movimientos; en productos solo tiene lectura. El barbero puede ver
-servicios y turnos, agregar turnos y consultar solo sus propias liquidaciones.
-La relación de cada barbero en `empleados.id_usuario` debe estar configurada
-para que ese filtro funcione.
-
-Toda nueva vista CRUD debe declarar
-`permission_classes = [DjangoModelViewPermissions]` (de `api.permissions`)
-para que, además de exigir un token, compruebe los permisos de modelo asignados
-al grupo. Sin esa clase, el permiso global solo valida que el usuario inició
-sesión.
-
-Los endpoints de disponibilidad y reserva de turnos siguen siendo públicos
-para permitir reservas de clientes. `GET /api/barberos/` también es público y
-solo devuelve el identificador, nombre, apellido y foto de los barberos;
-`/api/empleados/` permanece protegido y devuelve los datos administrativos.
-Las rutas `/api/empleados/` y `/api/liquidaciones/` están implementadas. Los
-permisos de los demás módulos ya quedan asignados a los grupos, pero sus
-endpoints CRUD deben implementarse en la API antes de que React pueda
-consultarlos o modificarlos.
+La API no usa usuarios, tokens ni permisos por sesión.
+Todas las rutas REST disponibles son públicas. Los módulos que se implementen
+deben declarar `permission_classes = [AllowAny]` o aceptar el permiso público
+global definido en `REST_FRAMEWORK`.
 
 ## Adaptar a su proyecto
 

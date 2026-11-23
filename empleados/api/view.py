@@ -1,7 +1,6 @@
 from rest_framework import generics, viewsets
 from rest_framework.permissions import AllowAny
 
-from api.permissions import DjangoModelViewPermissions
 from empleados.api.serializer import (
     BarberoPublicoSerializer,
     EmpleadosSerializer,
@@ -13,7 +12,7 @@ from empleados.models import Empleados, LiquidacionesSemanales
 class EmpleadosViewSet(viewsets.ModelViewSet):
     queryset = Empleados.objects.all().order_by('pk')
     serializer_class = EmpleadosSerializer
-    permission_classes = [DjangoModelViewPermissions]
+    permission_classes = [AllowAny]
 
 
 class BarberosPublicosAPIView(generics.ListAPIView):
@@ -27,11 +26,8 @@ class BarberosPublicosAPIView(generics.ListAPIView):
 
 class LiquidacionesSemanalesViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = LiquidacionesSemanalesSerializer
-    permission_classes = [DjangoModelViewPermissions]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         liquidaciones = LiquidacionesSemanales.objects.all()
-        user = self.request.user
-        if user.is_superuser or user.groups.filter(name='Administrador').exists():
-            return liquidaciones
-        return liquidaciones.filter(id_empleado__id_usuario=user)
+        return liquidaciones

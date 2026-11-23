@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.db import models
 
 
@@ -10,14 +9,6 @@ class Empleados(models.Model):
     dni = models.CharField(max_length=20, unique=True)
     foto_empleado = models.CharField(max_length=250, blank=True, null=True)
     porcentaje_comision = models.DecimalField(max_digits=5, decimal_places=2)
-    id_usuario = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        models.DO_NOTHING,
-        db_column='id_usuario',
-        blank=True,
-        null=True,
-    )
-
     class Meta:
         managed = False
         db_table = 'empleados'
@@ -74,19 +65,3 @@ class LiquidacionesSemanales(models.Model):
     def __str__(self):
         return f"Liquidación Semanal: {self.id_empleado} - {self.fecha_generacion} | Total a Pagar: {self.total_a_pagar}"
 
-
-class UsuariosSistemas(models.Model):
-    id_usuario = models.AutoField(primary_key=True)
-    id_empleado = models.OneToOneField(Empleados, models.DO_NOTHING, db_column='id_empleado')
-    password = models.CharField(max_length=200)
-    username = models.CharField(max_length=150, unique=True)
-    fecha_creacion = models.DateTimeField()
-    ultimo_acceso = models.DateTimeField(blank=True, null=True)
-    estado = models.BooleanField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'usuarios_sistemas'
-
-    def __str__(self):
-        return f"Usuario: {self.username} | Empleado: {self.id_empleado}"

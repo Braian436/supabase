@@ -18,7 +18,6 @@ class Migration(migrations.Migration):
                 ('nombre_empleado', models.CharField(blank=True, max_length=50, null=True)),
                 ('foto_empleado', models.BinaryField(blank=True, null=True)),
                 ('dni', models.CharField(blank=True, max_length=20, null=True)),
-                ('password', models.CharField(blank=True, max_length=150, null=True)),
                 ('estado', models.CharField(blank=True, max_length=20, null=True)),
                 ('fecha_alta', models.DateTimeField(blank=True, null=True)),
                 ('ultimo_acceso', models.DateTimeField(blank=True, null=True)),
