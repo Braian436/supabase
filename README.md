@@ -77,11 +77,23 @@ Para agregar un endpoint real sobre un modelo de su organización:
 4. Registren la ruta en `config/urls.py`, agrupada bajo `/api/`, por ejemplo:
    `path('api/turnos/', include('turnos.urls'))`.
 
+### Productos
+
+- `/api/productos/` y `/api/productos/<id_producto>/`: listado, alta, detalle,
+  edición parcial y eliminación de productos.
+- `/api/marcas/`, `/api/categorias/` y `/api/descuentos/`: listados para los
+  selectores del catálogo.
+- `/api/productos/precios/`: último costo unitario de compra y último precio
+  unitario de venta por producto, obtenidos de sus detalles de transacción.
+  Son datos históricos y no se editan desde el CRUD de productos.
+- No se agregan columnas ni migraciones: los precios provienen de compras y
+  ventas; el modelo de productos conserva sus campos y relaciones actuales.
+
 ### Acceso a la API
 
-Por el momento, las rutas de administración de empleados, roles y grupos no
-requieren login. Esto es solo para desarrollo: cualquier cliente que alcance
-la API puede crear, modificar o eliminar empleados y asignar cuentas, por lo
+Por el momento, las rutas de administración de empleados, roles, grupos y
+productos no requieren login. Esto es solo para desarrollo: cualquier cliente
+que alcance la API puede crear, modificar o eliminar estos registros, por lo
 que no se debe exponer el backend a Internet con esta configuración. El
 endpoint público de barberos sigue mostrando únicamente los datos necesarios
 para reservar.

@@ -6,7 +6,20 @@ from productos.models import Categorias, Descuentos, Marcas, Productos
 class ProductosSerializer(serializers.ModelSerializer):
     marca_nombre = serializers.CharField(source='id_marca.nombre', read_only=True)
     categoria_nombre = serializers.CharField(source='id_categoria.nombre', read_only=True)
+    categoria_descripcion = serializers.CharField(
+        source='id_categoria.descripcion', read_only=True, allow_null=True,
+    )
     descuento_nombre = serializers.CharField(source='id_descuento.nombre', read_only=True)
+    descuento_mayorista = serializers.BooleanField(
+        source='id_descuento.mayorista', read_only=True, allow_null=True,
+    )
+    descuento_cantidad = serializers.DecimalField(
+        source='id_descuento.cantidad',
+        max_digits=10,
+        decimal_places=2,
+        read_only=True,
+        allow_null=True,
+    )
 
     class Meta:
         model = Productos
@@ -21,8 +34,11 @@ class ProductosSerializer(serializers.ModelSerializer):
             'marca_nombre',
             'id_categoria',
             'categoria_nombre',
+            'categoria_descripcion',
             'id_descuento',
             'descuento_nombre',
+            'descuento_mayorista',
+            'descuento_cantidad',
         )
 
 

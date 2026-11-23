@@ -31,7 +31,10 @@ class ProductosSerializerTests(SimpleTestCase):
         self.assertEqual(data["id_marca"], 2)
         self.assertEqual(data["marca_nombre"], "Barber")
         self.assertEqual(data["categoria_nombre"], "Cabello")
+        self.assertIsNone(data["categoria_descripcion"])
         self.assertEqual(data["descuento_nombre"], "Mayorista")
+        self.assertTrue(data["descuento_mayorista"])
+        self.assertEqual(data["descuento_cantidad"], "10.00")
 
     def test_precios_historicos_aceptan_valores_ausentes(self):
         data = PreciosProductosSerializer({
