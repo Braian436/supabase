@@ -15,6 +15,7 @@ urlpatterns = [
     # por ejemplo: path('api/turnos/', include('turnos.api.urls')).
     path('api/', include('api.urls')),
 
+    path('api/', include('productos.api.urls')),
     path('api/', include('empleados.api.urls')),
     path('api/', include('turnos.api.urls')),
 
