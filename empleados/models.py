@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -15,6 +16,23 @@ class Empleados(models.Model):
 
     def __str__(self):
         return f"{self.nombre} {self.apellido} (DNI: {self.dni}) | Rol: {self.id_rol}"
+
+
+class EmpleadoCuenta(models.Model):
+    empleado = models.OneToOneField(
+        Empleados,
+        on_delete=models.CASCADE,
+        db_column='id_empleado',
+        related_name='cuenta',
+    )
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='cuenta_empleado',
+    )
+
+    class Meta:
+        db_table = 'empleado_cuentas'
 
 
 class Roles(models.Model):

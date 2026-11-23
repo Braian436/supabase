@@ -1,17 +1,181 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 from rest_framework import serializers
-from empleados.models import Empleados, LiquidacionesSemanales
+
+from empleados.models import (
+    EmpleadoCuenta,
+    Empleados,
+    LiquidacionesSemanales,
+    Roles,
+)
 
 
 class EmpleadosSerializer(serializers.ModelSerializer):
+    cuenta = serializers.SerializerMethodField()
+    rol_laboral = serializers.CharField(source='id_rol.nombre', read_only=True)
+    usuario = serializers.CharField(required=False, allow_blank=True, max_length=150, write_only=True)
+    contrasena = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=128,
+        trim_whitespace=False,
+        write_only=True,
+    )
+    grupo_usuario = serializers.CharField(required=False, allow_blank=True, write_only=True)
+
     class Meta:
         model = Empleados
-        fields = '__all__'
+        fields = (
+            'id_empleado',
+            'id_rol',
+            'rol_laboral',
+            'nombre',
+            'apellido',
+            'dni',
+            'foto_empleado',
+            'porcentaje_comision',
+            'cuenta',
+            'usuario',
+            'contrasena',
+            'grupo_usuario',
+        )
+
+    def _obtener_cuenta(self, empleado):
+        if empleado is None:
+            return None
+        try:
+            return empleado.cuenta
+        except EmpleadoCuenta.DoesNotExist:
+            return None
+
+    def get_cuenta(self, empleado):
+        cuenta = self._obtener_cuenta(empleado)
+        if cuenta is None:
+            return None
+        grupo = next(iter(cuenta.usuario.groups.all()), None)
+        return {
+            'usuario': cuenta.usuario.get_username(),
+            'grupo': grupo.name if grupo else '',
+        }
+
+    def validate(self, attrs):
+        cuenta_existente = self._obtener_cuenta(self.instance)
+        campos_cuenta = ('usuario', 'contrasena', 'grupo_usuario')
+        valores = {campo: attrs.get(campo, '') for campo in campos_cuenta}
+        completos = all(valores.values())
+        alguno_informado = any(valores.values())
+
+        if not cuenta_existente and alguno_informado and not completos:
+            raise serializers.ValidationError(
+                'Para crear una cuenta completá usuario, contraseña y grupo.'
+            )
+
+        if not alguno_informado:
+            return attrs
+
+        usuario_actual = cuenta_existente.usuario if cuenta_existente else None
+        username = valores['usuario']
+        if username:
+            usuarios = get_user_model().objects.filter(username=username)
+            if usuario_actual:
+                usuarios = usuarios.exclude(pk=usuario_actual.pk)
+            if usuarios.exists():
+                raise serializers.ValidationError({
+                    'usuario': 'Ese nombre de usuario ya está en uso.',
+                })
+
+        nombre_grupo = valores['grupo_usuario']
+        if nombre_grupo and not Group.objects.filter(name=nombre_grupo).exists():
+            raise serializers.ValidationError({
+                'grupo_usuario': 'Seleccioná un grupo existente.',
+            })
+
+        contrasena = valores['contrasena']
+        if contrasena:
+            try:
+                validate_password(contrasena, user=usuario_actual)
+            except DjangoValidationError as error:
+                raise serializers.ValidationError({
+                    'contrasena': error.messages,
+                }) from error
+
+        return attrs
+
+    def _guardar_cuenta(self, empleado, datos):
+        usuario = datos.get('usuario', '')
+        contrasena = datos.get('contrasena', '')
+        nombre_grupo = datos.get('grupo_usuario', '')
+        if not any((usuario, contrasena, nombre_grupo)):
+            return
+
+        cuenta = self._obtener_cuenta(empleado)
+        if cuenta is None:
+            User = get_user_model()
+            usuario_nuevo = User.objects.create_user(
+                username=usuario,
+                password=contrasena,
+            )
+            EmpleadoCuenta.objects.create(
+                empleado=empleado,
+                usuario=usuario_nuevo,
+            )
+            cuenta = empleado.cuenta
+        else:
+            usuario_nuevo = cuenta.usuario
+            campos_actualizados = []
+            if usuario:
+                usuario_nuevo.username = usuario
+                campos_actualizados.append('username')
+            if contrasena:
+                usuario_nuevo.set_password(contrasena)
+                campos_actualizados.append('password')
+            if campos_actualizados:
+                usuario_nuevo.save(update_fields=campos_actualizados)
+
+        if nombre_grupo:
+            grupo = Group.objects.get(name=nombre_grupo)
+            usuario_nuevo.groups.set([grupo])
+
+    def create(self, validated_data):
+        datos_cuenta = {
+            campo: validated_data.pop(campo, '')
+            for campo in ('usuario', 'contrasena', 'grupo_usuario')
+        }
+        with transaction.atomic():
+            empleado = super().create(validated_data)
+            self._guardar_cuenta(empleado, datos_cuenta)
+        return empleado
+
+    def update(self, instance, validated_data):
+        datos_cuenta = {
+            campo: validated_data.pop(campo, '')
+            for campo in ('usuario', 'contrasena', 'grupo_usuario')
+        }
+        with transaction.atomic():
+            empleado = super().update(instance, validated_data)
+            self._guardar_cuenta(empleado, datos_cuenta)
+        return empleado
 
 
 class BarberoPublicoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empleados
         fields = ('id_empleado', 'nombre', 'apellido', 'foto_empleado')
+
+
+class RolLaboralSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Roles
+        fields = ('id_rol', 'nombre')
+
+
+class GrupoUsuarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = ('id', 'name')
 
 
 class LiquidacionesSemanalesSerializer(serializers.ModelSerializer):

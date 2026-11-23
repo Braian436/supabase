@@ -79,10 +79,21 @@ Para agregar un endpoint real sobre un modelo de su organización:
 
 ### Acceso a la API
 
-La API no usa usuarios, tokens ni permisos por sesión.
-Todas las rutas REST disponibles son públicas. Los módulos que se implementen
-deben declarar `permission_classes = [AllowAny]` o aceptar el permiso público
-global definido en `REST_FRAMEWORK`.
+Por el momento, las rutas de administración de empleados, roles y grupos no
+requieren login. Esto es solo para desarrollo: cualquier cliente que alcance
+la API puede crear, modificar o eliminar empleados y asignar cuentas, por lo
+que no se debe exponer el backend a Internet con esta configuración. El
+endpoint público de barberos sigue mostrando únicamente los datos necesarios
+para reservar.
+
+Los grupos disponibles para asignar a empleados deben existir previamente en
+Django; el CRUD no crea ni modifica grupos. Al eliminar desde el CRUD un
+empleado asociado a una cuenta, esa cuenta queda desactivada en lugar de
+eliminarse. Apliquen las migraciones después de levantar la base de datos:
+
+```
+docker compose exec web python manage.py migrate
+```
 
 ## Adaptar a su proyecto
 
