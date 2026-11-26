@@ -9,6 +9,8 @@ class ServiciosApiTests(SimpleTestCase):
     def test_publica_rutas_de_listado_y_detalle(self):
         self.assertEqual(resolve('/api/servicios/').url_name, 'servicios-list')
         self.assertEqual(resolve('/api/servicios/3/').url_name, 'servicios-detail')
+        self.assertEqual(resolve('/api/empleados-servicios/').url_name, 'empleados-servicios-list')
+        self.assertEqual(resolve('/api/empleados-servicios/3/').url_name, 'empleados-servicios-detail')
 
     def test_serializa_nombre_descripcion_y_precio(self):
         servicio = Servicios(
