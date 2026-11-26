@@ -1,5 +1,19 @@
 from rest_framework import serializers
 
+from turnos.models import Clientes
+
+
+class ClientesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Clientes
+        fields = (
+            'id_cliente',
+            'telefono',
+            'nombre',
+            'apellido',
+            'fecha_nacimiento',
+        )
+
 
 class DisponibilidadQuerySerializer(serializers.Serializer):
     empleado = serializers.IntegerField(min_value=1)

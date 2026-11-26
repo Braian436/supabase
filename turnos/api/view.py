@@ -19,6 +19,15 @@ from turnos.api.serializer import (
 ESTADOS_OCUPADOS = ('pendiente', 'en curso', 'finalizado')
 
 
+class ClientesViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = ClientesSerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
+
+    def get_queryset(self):
+        return Clientes.objects.all().order_by('nombre', 'apellido')
+
+
 def api_error(code, detail, http_status):
     return Response(
         {'error': {'code': code, 'detail': detail}},

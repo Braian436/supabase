@@ -10,6 +10,9 @@ class Ventas(models.Model):
     fecha_cierre = models.DateTimeField()
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
     descuento = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    metodo_pago = models.CharField(max_length=20, blank=True, null=True)
+    monto_recibido = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    vuelto = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     id_express = models.ForeignKey('turnos.TurnosExpress', models.DO_NOTHING, db_column='id_express', blank=True, null=True)
 
     class Meta:
