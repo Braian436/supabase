@@ -10,6 +10,7 @@ from empleados.models import Empleados, LiquidacionesSemanales, RegistrosAsisten
 
 class EmpleadosSerializer(serializers.ModelSerializer):
     cuenta = serializers.SerializerMethodField()
+    rol_laboral = serializers.SerializerMethodField()
     usuario = serializers.CharField(required=False, allow_blank=True, max_length=150, write_only=True)
     contrasena = serializers.CharField(
         required=False,
@@ -24,6 +25,7 @@ class EmpleadosSerializer(serializers.ModelSerializer):
         model = Empleados
         fields = (
             'id_empleado',
+            'rol_laboral',
             'nombre',
             'apellido',
             'dni',
@@ -36,9 +38,17 @@ class EmpleadosSerializer(serializers.ModelSerializer):
         )
 
     def _obtener_cuenta(self, empleado):
+        """Devuelve el usuario de auth vinculado al empleado, si existe."""
         if empleado is None:
             return None
         return empleado.id_user
+
+    def get_rol_laboral(self, empleado):
+        usuario = self._obtener_cuenta(empleado)
+        if usuario is None:
+            return ''
+        grupo = usuario.groups.first()
+        return grupo.name if grupo else ''
 
     def get_cuenta(self, empleado):
         usuario = self._obtener_cuenta(empleado)
@@ -57,7 +67,7 @@ class EmpleadosSerializer(serializers.ModelSerializer):
         completos = all(valores.values())
         alguno_informado = any(valores.values())
 
-        if not cuenta_existente and alguno_informado and not completos:
+        if cuenta_existente is None and alguno_informado and not completos:
             raise serializers.ValidationError(
                 'Para crear una cuenta completá usuario, contraseña y grupo.'
             )
@@ -113,13 +123,13 @@ class EmpleadosSerializer(serializers.ModelSerializer):
             usuario_nuevo = usuario_actual
             campos_actualizados = []
             if usuario:
-                usuario_nuevo.username = usuario
+                usuario_actual.username = usuario
                 campos_actualizados.append('username')
             if contrasena:
-                usuario_nuevo.set_password(contrasena)
+                usuario_actual.set_password(contrasena)
                 campos_actualizados.append('password')
             if campos_actualizados:
-                usuario_nuevo.save(update_fields=campos_actualizados)
+                usuario_actual.save(update_fields=campos_actualizados)
 
         if nombre_grupo:
             grupo = Group.objects.get(name=nombre_grupo)

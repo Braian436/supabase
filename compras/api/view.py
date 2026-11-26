@@ -1,11 +1,13 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 
+from api.permissions import EsAdministrador
 from compras.api.serializer import CompraCreateSerializer, CompraSerializer
 from compras.models import Compras
 
 
 class ComprasAPIView(generics.ListCreateAPIView):
+    permission_classes = [EsAdministrador]
     queryset = Compras.objects.prefetch_related(
         'detallescompras_set__id_producto',
     ).order_by('-fecha', '-id_compra')

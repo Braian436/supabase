@@ -21,6 +21,14 @@ class Empleados(models.Model):
         managed = False
         db_table = 'empleados'
 
+    @property
+    def rol_laboral(self):
+        """Nombre del grupo de auth (Barbero, Cajero, Administrador)."""
+        if not self.id_user_id:
+            return ''
+        grupo = self.id_user.groups.first()
+        return grupo.name if grupo else ''
+
     def __str__(self):
         return f"{self.nombre} {self.apellido} (DNI: {self.dni})"
 
@@ -59,4 +67,3 @@ class LiquidacionesSemanales(models.Model):
 
     def __str__(self):
         return f"Liquidación Semanal: {self.id_empleado} - {self.fecha_generacion} | Total a Pagar: {self.total_a_pagar}"
-

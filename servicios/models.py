@@ -18,7 +18,12 @@ class Servicios(models.Model):
 
 class ServiciosTurnos(models.Model):
     id_servicio_turno = models.AutoField(primary_key=True)
-    id_turno = models.ForeignKey('turnos.Turnos', models.DO_NOTHING, db_column='id_turno')
+    id_turno = models.ForeignKey(
+        'turnos.Turnos',
+        models.DO_NOTHING,
+        db_column='id_turno',
+        related_name='servicios_turnos',
+    )
     id_servicio = models.ForeignKey(Servicios, models.DO_NOTHING, db_column='id_servicio')
 
     class Meta:

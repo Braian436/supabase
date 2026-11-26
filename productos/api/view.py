@@ -4,6 +4,7 @@ from rest_framework import generics, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 
+from api.permissions import AdministradorOLectura
 from compras.models import DetallesCompras
 from productos.api.serializer import (
     CategoriasSerializer,
@@ -30,7 +31,7 @@ class ProductosViewSet(viewsets.ModelViewSet):
         .order_by('id_producto')
     )
     serializer_class = ProductosSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [AdministradorOLectura]
     pagination_class = None
 
 

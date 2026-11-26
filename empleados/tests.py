@@ -225,17 +225,16 @@ class PublicBarberosApiTests(SimpleTestCase):
         with self.assertRaises(Resolver404):
             resolve('/api/roles/')
 
-    def test_lista_administrativa_de_empleados_permite_anonimos(self):
+    def test_lista_administrativa_de_empleados_requiere_autenticacion(self):
         with patch(
             'empleados.api.view.EmpleadosViewSet.queryset',
             [],
         ):
             response = APIClient().get(reverse('empleados-list'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['count'], 0)
+        self.assertEqual(response.status_code, 401)
 
-    def test_creacion_de_empleado_no_requiere_autenticacion(self):
+    def test_creacion_de_empleado_requiere_autenticacion(self):
         serializer = Mock()
         serializer.data = {'id_empleado': 7}
         with patch.object(EmpleadosViewSet, 'get_serializer', return_value=serializer):
@@ -245,10 +244,10 @@ class PublicBarberosApiTests(SimpleTestCase):
                 format='json',
             )
 
-        self.assertEqual(response.status_code, 201)
-        serializer.save.assert_called_once_with()
+        self.assertEqual(response.status_code, 401)
+        serializer.save.assert_not_called()
 
-    def test_grupos_de_usuario_se_listan_sin_autenticacion(self):
+    def test_grupos_de_usuario_requieren_autenticacion(self):
         client = APIClient()
         with patch.object(
             GruposAPIView,
@@ -257,8 +256,7 @@ class PublicBarberosApiTests(SimpleTestCase):
         ):
             response = client.get(reverse('grupos-list'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, [{'id': 3, 'name': 'Barberos'}])
+        self.assertEqual(response.status_code, 401)
 
 
 class AsistenciasRangoTests(SimpleTestCase):

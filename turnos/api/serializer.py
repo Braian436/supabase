@@ -1,18 +1,6 @@
 from rest_framework import serializers
 
-from turnos.models import Clientes
-
-
-class ClientesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Clientes
-        fields = (
-            'id_cliente',
-            'telefono',
-            'nombre',
-            'apellido',
-            'fecha_nacimiento',
-        )
+from turnos.models import Clientes, Turnos
 
 
 class DisponibilidadQuerySerializer(serializers.Serializer):
@@ -54,7 +42,6 @@ class ClientesSerializer(serializers.ModelSerializer):
     fecha_nacimiento = serializers.DateField(required=False, allow_null=True)
 
     class Meta:
-        from turnos.models import Clientes
         model = Clientes
         fields = ('id_cliente', 'nombre', 'apellido', 'telefono', 'fecha_nacimiento')
 
@@ -72,3 +59,54 @@ class ClientesSerializer(serializers.ModelSerializer):
 
     def validate_telefono(self, value):
         return self._limpiar(value, 'teléfono')
+
+
+class TurnosSerializer(serializers.ModelSerializer):
+    cliente = serializers.SerializerMethodField()
+    barbero = serializers.SerializerMethodField()
+    servicios = serializers.SerializerMethodField()
+    hora = serializers.TimeField(format='%H:%M', read_only=True)
+
+    class Meta:
+        model = Turnos
+        fields = (
+            'id_turno',
+            'fecha',
+            'hora',
+            'estado',
+            'cliente',
+            'barbero',
+            'servicios',
+        )
+
+    def get_cliente(self, turno):
+        cliente = turno.id_cliente
+        if cliente is None:
+            return None
+        return {
+            'id_cliente': cliente.pk,
+            'nombre': cliente.nombre,
+            'apellido': cliente.apellido,
+            'telefono': cliente.telefono,
+        }
+
+    def get_barbero(self, turno):
+        empleado = turno.id_empleado
+        if empleado is None:
+            return None
+        return {
+            'id_empleado': empleado.pk,
+            'nombre': empleado.nombre,
+            'apellido': empleado.apellido,
+        }
+
+    def get_servicios(self, turno):
+        return [
+            {
+                'id_servicio': servicio.id_servicio.pk,
+                'nombre': servicio.id_servicio.nombre,
+                'precio': str(servicio.id_servicio.precio),
+            }
+            for servicio in turno.servicios_turnos.all()
+            if servicio.id_servicio_id
+        ]

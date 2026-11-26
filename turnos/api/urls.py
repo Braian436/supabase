@@ -5,10 +5,12 @@ from turnos.api.view import (
     ClientesViewSet,
     DisponibilidadTurnosAPIView,
     ReservarTurnoAPIView,
+    TurnosViewSet,
 )
 
 router = DefaultRouter()
 router.register('clientes', ClientesViewSet, basename='clientes')
+router.register('turnos', TurnosViewSet, basename='turnos')
 
 urlpatterns = [
     path(

@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.dashboard import obtener_resumen_dashboard
+from api.dashboard_barbero import obtener_resumen_barbero, resolver_empleado
+from api.permissions import EsAdministrador, EsBarberoOAdministrador
 
 
 class DashboardFechasSerializer(serializers.Serializer):
@@ -14,7 +16,7 @@ class DashboardFechasSerializer(serializers.Serializer):
 
 
 class DashboardAdministradorAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [EsAdministrador]
 
     def get(self, request):
         serializer = DashboardFechasSerializer(data=request.query_params)
@@ -29,6 +31,39 @@ class DashboardAdministradorAPIView(APIView):
             fecha_barberos=fechas.get('fecha_barberos', hoy),
             fecha_cortes=fechas.get('fecha_cortes', hoy),
         )
+        return Response(resumen, status=status.HTTP_200_OK)
+
+
+class DashboardBarberoQuerySerializer(serializers.Serializer):
+    empleado = serializers.IntegerField(min_value=1, required=False)
+    fecha = serializers.DateField(required=False)
+
+
+class DashboardBarberoAPIView(APIView):
+    permission_classes = [EsBarberoOAdministrador]
+
+    def get(self, request):
+        serializer = DashboardBarberoQuerySerializer(data=request.query_params)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        datos = serializer.validated_data
+        fecha = datos.get('fecha') or timezone.localdate()
+        empleado_solicitado = datos.get('empleado')
+        empleado = resolver_empleado(request.user, empleado_solicitado)
+
+        if empleado is None:
+            if empleado_solicitado is not None:
+                return Response(
+                    {'detail': 'No podés consultar el panel de otro barbero.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            return Response(
+                {'detail': 'El usuario no tiene un empleado vinculado.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        resumen = obtener_resumen_barbero(empleado=empleado, fecha=fecha)
         return Response(resumen, status=status.HTTP_200_OK)
 
 

@@ -1,9 +1,11 @@
 from decimal import Decimal
-from datetime import date
+from datetime import date, datetime, time
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
-from django.urls import Resolver404, resolve
+from django.urls import resolve
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from api.dashboard import (
@@ -11,23 +13,26 @@ from api.dashboard import (
     calcular_resumen_dashboard,
     obtener_resumen_dashboard,
 )
+from api.dashboard_barbero import _proximos_turnos, calcular_resumen_barbero
+from turnos.api.horarios import hora_limite
 
-class AdminLoginRemovalTests(SimpleTestCase):
-    def test_login_and_session_endpoints_are_no_longer_available(self):
-        for path in (
-            '/api/auth/csrf/',
-            '/api/auth/login/',
-            '/api/auth/me/',
-            '/api/auth/logout/',
-        ):
+class AuthEndpointsTests(SimpleTestCase):
+    def test_login_and_session_endpoints_are_registered(self):
+        esperados = {
+            '/api/auth/login/': 'auth-login',
+            '/api/auth/logout/': 'auth-logout',
+            '/api/auth/me/': 'auth-me',
+        }
+        for path, nombre in esperados.items():
             with self.subTest(path=path):
-                with self.assertRaises(Resolver404):
-                    resolve(path)
+                self.assertEqual(resolve(path).url_name, nombre)
 
 
 class DashboardAdministradorApiTests(SimpleTestCase):
     def setUp(self):
         self.client = APIClient()
+        usuario = Mock(is_authenticated=True, is_superuser=True)
+        self.client.force_authenticate(user=usuario)
 
     def test_dashboard_summary_route_is_registered(self):
         match = resolve('/api/dashboard/administrador/')
@@ -230,3 +235,53 @@ class TotalMovimientosTests(SimpleTestCase):
 
         self.assertEqual(total, '110.00')
 
+
+class DashboardBarberoTests(SimpleTestCase):
+    def setUp(self):
+        self.fecha = date(2026, 11, 26)
+        self.ahora = timezone.make_aware(datetime(2026, 11, 26, 17, 0))
+
+    def test_pendientes_vencidos_no_cuentan_como_turnos_de_hoy(self):
+        turnos = [
+            SimpleNamespace(estado='pendiente', hora=time(11, 0)),
+            SimpleNamespace(estado='pendiente', hora=time(18, 0)),
+            SimpleNamespace(estado='finalizado', hora=time(10, 0)),
+        ]
+
+        resumen = calcular_resumen_barbero(
+            fecha=self.fecha,
+            turnos_hoy=turnos,
+            turnos_express_hoy=[],
+            servicios_semana=0,
+            ventas_semana=[],
+            ventas_hoy=[],
+            porcentaje_comision=50,
+            proximos_turnos=[],
+            ahora=self.ahora,
+        )
+
+        self.assertEqual(resumen['turnos_hoy'], 2)
+        self.assertEqual(resumen['turnos_hoy_pendientes'], 1)
+
+    def test_proximos_turnos_respeta_el_margen_de_cinco_minutos(self):
+        def turno(hora, pk):
+            return SimpleNamespace(
+                pk=pk,
+                fecha=self.fecha,
+                hora=hora,
+                estado='pendiente',
+                id_cliente=SimpleNamespace(nombre='Ana', apellido='Pérez'),
+                servicios_turnos=Mock(all=Mock(return_value=[])),
+            )
+
+        candidatos = [
+            turno(time(11, 0), 1),
+            turno(time(17, 4), 2),
+            turno(time(18, 0), 3),
+        ]
+
+        proximos = _proximos_turnos(
+            candidatos, [], self.fecha, hora_limite(self.ahora)
+        )
+
+        self.assertEqual([item['id_turno'] for item in proximos], [3])

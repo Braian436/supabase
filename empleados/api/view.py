@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from cajas.models import Cajas
+from api.permissions import EsAdministrador
 from empleados.api.serializer import (
     BarberoPublicoSerializer,
     EmpleadosSerializer,
@@ -51,7 +52,7 @@ class EmpleadosViewSet(viewsets.ModelViewSet):
         .order_by('pk')
     )
     serializer_class = EmpleadosSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [EsAdministrador]
 
     def perform_destroy(self, instance):
         with transaction.atomic():
@@ -64,7 +65,7 @@ class EmpleadosViewSet(viewsets.ModelViewSet):
 class GruposAPIView(generics.ListAPIView):
     queryset = Group.objects.all().order_by('name')
     serializer_class = GrupoUsuarioSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [EsAdministrador]
     pagination_class = None
 
 
@@ -228,4 +229,8 @@ class LiquidacionesSemanalesViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         liquidaciones = LiquidacionesSemanales.objects.all()
+        request = getattr(self, 'request', None)
+        empleado = request.query_params.get('empleado') if request is not None else None
+        if empleado:
+            liquidaciones = liquidaciones.filter(id_empleado_id=empleado)
         return liquidaciones
