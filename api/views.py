@@ -1,7 +1,35 @@
-from rest_framework import status
+from django.utils import timezone
+from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from api.dashboard import obtener_resumen_dashboard
+
+
+class DashboardFechasSerializer(serializers.Serializer):
+    fecha_caja = serializers.DateField(required=False)
+    fecha_barberos = serializers.DateField(required=False)
+    fecha_cortes = serializers.DateField(required=False)
+
+
+class DashboardAdministradorAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        serializer = DashboardFechasSerializer(data=request.query_params)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        hoy = timezone.localdate()
+        fechas = serializer.validated_data
+        resumen = obtener_resumen_dashboard(
+            fecha_hoy=hoy,
+            fecha_caja=fechas.get('fecha_caja', hoy),
+            fecha_barberos=fechas.get('fecha_barberos', hoy),
+            fecha_cortes=fechas.get('fecha_cortes', hoy),
+        )
+        return Response(resumen, status=status.HTTP_200_OK)
 
 
 class EstadoAPIView(APIView):
