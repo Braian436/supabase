@@ -34,3 +34,27 @@ class ReservaTurnoSerializer(serializers.Serializer):
     nombre = serializers.CharField(allow_blank=False, trim_whitespace=True)
     apellido = serializers.CharField(allow_blank=False, trim_whitespace=True)
     telefono = serializers.CharField(allow_blank=False, trim_whitespace=True)
+
+
+class ClientesSerializer(serializers.ModelSerializer):
+    fecha_nacimiento = serializers.DateField(required=False, allow_null=True)
+
+    class Meta:
+        from turnos.models import Clientes
+        model = Clientes
+        fields = ('id_cliente', 'nombre', 'apellido', 'telefono', 'fecha_nacimiento')
+
+    def _limpiar(self, value, etiqueta):
+        texto = value.strip()
+        if not texto:
+            raise serializers.ValidationError(f'El {etiqueta} es obligatorio.')
+        return texto
+
+    def validate_nombre(self, value):
+        return self._limpiar(value, 'nombre')
+
+    def validate_apellido(self, value):
+        return self._limpiar(value, 'apellido')
+
+    def validate_telefono(self, value):
+        return self._limpiar(value, 'teléfono')

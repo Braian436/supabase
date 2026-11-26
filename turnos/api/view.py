@@ -1,7 +1,8 @@
 from datetime import timedelta
 
-from django.db import transaction
-from rest_framework import status
+from django.db import IntegrityError, transaction
+from rest_framework import status, viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -9,6 +10,7 @@ from rest_framework.views import APIView
 from empleados.models import Empleados
 from turnos.models import Clientes, Turnos
 from turnos.api.serializer import (
+    ClientesSerializer,
     DisponibilidadQuerySerializer,
     ReservaTurnoSerializer,
 )
@@ -140,3 +142,16 @@ class ReservarTurnoAPIView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class ClientesViewSet(viewsets.ModelViewSet):
+    queryset = Clientes.objects.all().order_by('nombre', 'apellido')
+    serializer_class = ClientesSerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
+
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except IntegrityError as exc:
+            raise ValidationError('No se puede eliminar el cliente porque tiene turnos o ventas asociadas.') from exc
