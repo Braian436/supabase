@@ -43,15 +43,16 @@ def _iso(fecha):
 
 
 def _total_movimientos(movimientos):
-    total = sum(
-        (
-            Decimal(str(movimiento.get('total') or 0))
-            for movimiento in movimientos
-            if str(movimiento.get('tipo_movimiento') or '').strip().casefold()
-            in {'cobro', 'ingreso'}
-        ),
-        Decimal('0'),
-    )
+    total = Decimal('0')
+    for movimiento in movimientos:
+        tipo = (
+            str(movimiento.get('tipo_movimiento') or '').strip().casefold()
+        )
+        valor = Decimal(str(movimiento.get('total') or 0))
+        if tipo in {'cobro', 'ingreso'}:
+            total += valor
+        elif tipo == 'anulacion':
+            total -= valor
     return f'{total:.2f}'
 
 
@@ -156,7 +157,7 @@ def _movimientos_caja(fecha):
         .filter(
             fecha__gte=inicio,
             fecha__lt=fin,
-            tipo_normalizado__in=('cobro', 'ingreso'),
+            tipo_normalizado__in=('cobro', 'ingreso', 'anulacion'),
         )
         .values('tipo_movimiento', 'total')
     )
@@ -198,8 +199,11 @@ def obtener_resumen_dashboard(
 
     inicio_asistencia, fin_asistencia = _rango_dia(fecha_barberos)
     barberos = list(
-        Empleados.objects.filter(id_user__groups__name__iexact='Barberos')
+        Empleados.objects.filter(
+            id_user__groups__name__in=('Barbero', 'Barberos'),
+        )
         .values('id_empleado', 'nombre', 'apellido')
+        .distinct()
     )
     asistencias = list(
         RegistrosAsistencias.objects.filter(
@@ -217,7 +221,10 @@ def obtener_resumen_dashboard(
         turnos_express_hoy=turnos_express_hoy,
         movimientos_caja_hoy=movimientos_hoy,
         movimientos_caja_fecha=movimientos_fecha,
-        tickets_abiertos=Ventas.objects.filter(estado=False).count(),
+        tickets_abiertos=Ventas.objects.filter(
+            estado=False,
+            anulada=False,
+        ).count(),
         liquidaciones_pendientes=LiquidacionesSemanales.objects.filter(
             estado=False,
         ).count(),

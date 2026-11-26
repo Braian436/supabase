@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from datetime import date, time, timedelta
 from unittest.mock import Mock, patch
 from contextlib import nullcontext
 
@@ -6,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase
 from django.contrib.auth.hashers import check_password, make_password
 from django.urls import Resolver404, resolve, reverse
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.test import APIClient
 
@@ -15,6 +17,8 @@ from empleados.api.view import (
     EmpleadosViewSet,
     GruposAPIView,
     LiquidacionesSemanalesViewSet,
+    hay_caja_abierta,
+    rango_dia,
 )
 from empleados.models import Empleados
 
@@ -202,7 +206,7 @@ class PublicBarberosApiTests(SimpleTestCase):
         client = APIClient()
 
         with patch('empleados.api.view.Empleados.objects.filter') as filtrar:
-            filtrar.return_value.order_by.return_value = empleados
+            filtrar.return_value.distinct.return_value.order_by.return_value = empleados
             response = client.get('/api/barberos/')
 
         self.assertEqual(response.status_code, 200)
@@ -215,7 +219,7 @@ class PublicBarberosApiTests(SimpleTestCase):
                 'foto_empleado': '/media/ada.jpg',
             }],
         )
-        filtrar.assert_called_once_with(id_user__groups__name='Barberos')
+        filtrar.assert_called_once_with(id_user__groups__name__in=('Barbero', 'Barberos'))
 
     def test_ruta_de_roles_ya_no_esta_registrada(self):
         with self.assertRaises(Resolver404):
@@ -255,3 +259,49 @@ class PublicBarberosApiTests(SimpleTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, [{'id': 3, 'name': 'Barberos'}])
+
+
+class AsistenciasRangoTests(SimpleTestCase):
+    def test_rango_dia_cubre_veinticuatro_horas_locales(self):
+        inicio, fin = rango_dia(date(2026, 11, 26))
+
+        self.assertEqual(fin - inicio, timedelta(days=1))
+        self.assertEqual(timezone.localtime(inicio).time(), time.min)
+        self.assertEqual(timezone.localtime(fin).date(), date(2026, 11, 27))
+
+    def test_ruta_de_asistencias_esta_registrada(self):
+        self.assertEqual(resolve('/api/asistencias/').url_name, 'asistencias-list')
+        self.assertEqual(
+            resolve('/api/asistencias/dia/').url_name,
+            'asistencias-dia',
+        )
+
+
+class AsistenciasCajaTests(SimpleTestCase):
+    @patch('empleados.api.view.Cajas.objects.filter')
+    def test_hay_caja_abierta_consulta_cajas_sin_cierre(self, filtrar):
+        filtrar.return_value.exists.return_value = True
+
+        self.assertTrue(hay_caja_abierta())
+        filtrar.assert_called_once_with(fecha_cierre__isnull=True)
+
+    @patch('empleados.api.view.hay_caja_abierta', return_value=False)
+    def test_registrar_asistencia_sin_caja_devuelve_409(self, _):
+        response = APIClient().post(
+            '/api/asistencias/',
+            {'id_empleado': 4},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.data['detail'], 'No hay una caja abierta.')
+
+    @patch('empleados.api.view.hay_caja_abierta', return_value=False)
+    def test_editar_asistencia_sin_caja_devuelve_409(self, _):
+        response = APIClient().patch(
+            '/api/asistencias/1/',
+            {'estado': 'presente'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 409)

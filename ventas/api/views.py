@@ -5,10 +5,11 @@ from django.db.models import F
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from cajas.api.views import autenticar_cajero
 from cajas.models import Cajas, MovimientosCajas
 from productos.models import Productos
 from servicios.models import Servicios
@@ -16,6 +17,8 @@ from turnos.models import Clientes
 from ventas.models import DetallesProductos, DetallesServicios, Ventas
 
 from .serializers import (
+    AnularVentaSerializer,
+    CancelarVentaSerializer,
     CobrarVentaSerializer,
     CrearTicketSerializer,
     VentaSerializer,
@@ -41,9 +44,168 @@ class VentasViewSet(viewsets.ModelViewSet):
     serializer_class = VentaSerializer
     permission_classes = [AllowAny]
     pagination_class = None
+    http_method_names = ['get', 'post', 'head', 'options']
+
+    def create(self, request, *args, **kwargs):
+        return Response(
+            {'detail': 'Las ventas se crean desde un ticket.'},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+    @staticmethod
+    def _reponer_stock(venta):
+        for detalle in DetallesProductos.objects.filter(id_venta=venta):
+            Productos.objects.filter(pk=detalle.id_producto_id).update(
+                stock_actual=F('stock_actual') + detalle.cantidad
+            )
+
+    @action(detail=True, methods=['post'], url_path='anular')
+    def anular(self, request, pk=None):
+        serializer = AnularVentaSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        datos = serializer.validated_data
+        empleado = autenticar_cajero(datos['usuario'], datos['contrasena'])
+
+        with transaction.atomic():
+            venta = Ventas.objects.select_for_update().filter(pk=pk).first()
+            if venta is None:
+                raise NotFound('La venta no existe.')
+            if venta.anulada:
+                return Response(
+                    {'detail': 'La venta ya está anulada.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            if not venta.estado:
+                return Response(
+                    {
+                        'detail': (
+                            'Solo se anulan ventas cobradas. '
+                            'Para un ticket pendiente usá cancelar.'
+                        )
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            movimiento = (
+                MovimientosCajas.objects.select_related('id_caja')
+                .filter(id_venta=venta, tipo_movimiento__iexact='cobro')
+                .order_by('-id_movimiento_caja')
+                .first()
+            )
+            if movimiento is None or movimiento.id_caja is None:
+                return Response(
+                    {'detail': 'La venta no está asociada a una caja.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            caja = movimiento.id_caja
+            if caja.fecha_cierre is not None:
+                return Response(
+                    {
+                        'detail': (
+                            'La caja ya está cerrada. '
+                            'Registrá una devolución.'
+                        )
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
+            if caja.id_empleado_id != empleado.pk:
+                raise PermissionDenied(
+                    'Solo el cajero que abrió la caja puede anular ventas.'
+                )
+
+            motivo = datos['motivo'].strip()
+            ahora = timezone.now()
+            MovimientosCajas.objects.create(
+                id_caja=caja,
+                id_venta=venta,
+                total=movimiento.total,
+                fecha=ahora,
+                tipo_movimiento='anulacion',
+                concepto=f'Anulación venta #{venta.pk}: {motivo}',
+                metodo_pago=movimiento.metodo_pago or 'efectivo',
+            )
+            self._reponer_stock(venta)
+            venta.anulada = True
+            venta.motivo_anulacion = motivo
+            venta.anulada_por = (
+                empleado.id_user.get_username()
+                if empleado.id_user_id
+                else datos['usuario']
+            )
+            venta.fecha_anulacion = ahora
+            venta.save(
+                update_fields=[
+                    'anulada',
+                    'motivo_anulacion',
+                    'anulada_por',
+                    'fecha_anulacion',
+                ]
+            )
+
+        return Response(VentaSerializer(venta).data)
+
+    @action(detail=True, methods=['post'], url_path='cancelar')
+    def cancelar(self, request, pk=None):
+        serializer = CancelarVentaSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        motivo = serializer.validated_data['motivo'].strip()
+
+        with transaction.atomic():
+            venta = Ventas.objects.select_for_update().filter(pk=pk).first()
+            if venta is None:
+                raise NotFound('La venta no existe.')
+            if venta.anulada:
+                return Response(
+                    {'detail': 'La venta ya está anulada.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            if venta.estado:
+                return Response(
+                    {'detail': 'La venta ya está cobrada: usá anular.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            caja = (
+                Cajas.objects.select_related('id_empleado__id_user')
+                .filter(fecha_cierre__isnull=True)
+                .order_by('-id_caja')
+                .first()
+            )
+            if caja is None:
+                return Response(
+                    {'detail': 'No hay una caja abierta.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            usuario = getattr(caja.id_empleado, 'id_user', None)
+            ahora = timezone.now()
+            self._reponer_stock(venta)
+            venta.anulada = True
+            venta.motivo_anulacion = motivo
+            venta.anulada_por = (
+                usuario.get_username() if usuario else 'Caja'
+            )
+            venta.fecha_anulacion = ahora
+            venta.save(
+                update_fields=[
+                    'anulada',
+                    'motivo_anulacion',
+                    'anulada_por',
+                    'fecha_anulacion',
+                ]
+            )
+
+        return Response(VentaSerializer(venta).data)
 
     @action(detail=False, methods=['post'], url_path='crear-ticket')
     def crear_ticket(self, request):
+        if not Cajas.objects.filter(fecha_cierre__isnull=True).exists():
+            return Response(
+                {'detail': 'No hay una caja abierta.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+
         serializer = CrearTicketSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         datos = serializer.validated_data
@@ -182,6 +344,12 @@ class VentasViewSet(viewsets.ModelViewSet):
                 venta = Ventas.objects.select_for_update().get(pk=pk)
             except Ventas.DoesNotExist:
                 raise NotFound('La venta no existe.')
+
+            if venta.anulada:
+                return Response(
+                    {'detail': 'La venta está anulada o cancelada.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
 
             if venta.estado:
                 return Response(

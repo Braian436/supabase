@@ -110,3 +110,25 @@ class CrearTicketSerializer(serializers.Serializer):
                 'cliente': 'Indicá un cliente existente o uno nuevo.'
             })
         return attrs
+
+
+class AnularVentaSerializer(serializers.Serializer):
+    motivo = serializers.CharField(
+        max_length=200,
+        min_length=5,
+        trim_whitespace=True,
+    )
+    usuario = serializers.CharField(max_length=150, trim_whitespace=True)
+    contrasena = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+    )
+
+
+class CancelarVentaSerializer(serializers.Serializer):
+    motivo = serializers.CharField(
+        max_length=200,
+        min_length=5,
+        trim_whitespace=True,
+    )
+

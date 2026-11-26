@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import serializers
 
-from empleados.models import Empleados, LiquidacionesSemanales
+from empleados.models import Empleados, LiquidacionesSemanales, RegistrosAsistencias
 
 
 class EmpleadosSerializer(serializers.ModelSerializer):
@@ -150,6 +150,59 @@ class BarberoPublicoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empleados
         fields = ('id_empleado', 'nombre', 'apellido', 'foto_empleado')
+
+
+ESTADOS_ASISTENCIA = ('presente', 'ausente', 'justificado')
+
+
+class RegistrosAsistenciasSerializer(serializers.ModelSerializer):
+    empleado_nombre = serializers.CharField(
+        source='id_empleado.nombre',
+        read_only=True,
+    )
+    empleado_apellido = serializers.CharField(
+        source='id_empleado.apellido',
+        read_only=True,
+    )
+    rol = serializers.SerializerMethodField()
+    hora_entrada = serializers.TimeField(required=False, allow_null=True)
+    hora_salida = serializers.TimeField(required=False, allow_null=True)
+    estado = serializers.ChoiceField(
+        choices=ESTADOS_ASISTENCIA,
+        required=False,
+        default='presente',
+    )
+    observacion = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default='',
+        max_length=200,
+    )
+
+    class Meta:
+        model = RegistrosAsistencias
+        fields = (
+            'id_asistencias',
+            'id_empleado',
+            'empleado_nombre',
+            'empleado_apellido',
+            'rol',
+            'fecha',
+            'hora_entrada',
+            'hora_salida',
+            'fecha_modificacion',
+            'estado',
+            'observacion',
+        )
+        read_only_fields = ('fecha', 'fecha_modificacion')
+
+    def get_rol(self, registro):
+        usuario = getattr(registro.id_empleado, 'id_user', None)
+        if usuario is None:
+            return ''
+        grupo = usuario.groups.first()
+        return grupo.name if grupo else ''
+
 
 class GrupoUsuarioSerializer(serializers.ModelSerializer):
     class Meta:

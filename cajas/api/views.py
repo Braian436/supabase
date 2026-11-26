@@ -27,14 +27,10 @@ def autenticar_cajero(usuario, contrasena):
     if not user or not user.check_password(contrasena):
         raise PermissionDenied('Usuario o contraseña incorrectos.')
 
-    empleado = (
-        Empleados.objects.select_related('id_rol')
-        .filter(cuenta__usuario=user)
-        .first()
-    )
+    empleado = Empleados.objects.filter(id_user=user).first()
     if not empleado:
         raise PermissionDenied('El usuario no está vinculado a un empleado.')
-    if empleado.id_rol.nombre != 'Cajero':
+    if not user.groups.filter(name__iexact='Cajero').exists():
         raise PermissionDenied('El usuario no tiene rol Cajero.')
     return empleado
 
@@ -48,6 +44,9 @@ def calcular_saldo_esperado(caja):
         if tipo in ('ingreso', 'cobro', 'propina'):
             if metodo == 'efectivo':
                 saldo += movimiento.total
+        elif tipo == 'anulacion':
+            if metodo == 'efectivo':
+                saldo -= movimiento.total
         elif tipo == 'egreso' and metodo == 'efectivo':
             saldo -= movimiento.total
     return saldo

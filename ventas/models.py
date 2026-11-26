@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -14,10 +15,19 @@ class Ventas(models.Model):
     monto_recibido = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     vuelto = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     id_express = models.ForeignKey('turnos.TurnosExpress', models.DO_NOTHING, db_column='id_express', blank=True, null=True)
+    anulada = models.BooleanField(default=False)
+    motivo_anulacion = models.CharField(max_length=200, blank=True, null=True)
+    anulada_por = models.CharField(max_length=150, blank=True, null=True)
+    fecha_anulacion = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'ventas'
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError(
+            'Las ventas no se eliminan: se anulan o cancelan.'
+        )
 
     def __str__(self):
         return f"Venta {self.id_venta} - Cliente: {self.id_cliente} - Total: {self.subtotal}"

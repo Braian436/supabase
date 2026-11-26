@@ -30,10 +30,10 @@ class RegistrosAsistencias(models.Model):
     id_empleado = models.ForeignKey(Empleados, models.DO_NOTHING, db_column='id_empleado')
     fecha = models.DateTimeField()
     hora_entrada = models.TimeField(blank=True, null=True)
-    hora_salida = models.TimeField()
+    hora_salida = models.TimeField(blank=True, null=True)
     fecha_modificacion = models.DateTimeField()
     estado = models.CharField(max_length=20)
-    observacion = models.CharField(max_length=200)
+    observacion = models.CharField(max_length=200, blank=True, default='')
 
     class Meta:
         managed = False

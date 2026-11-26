@@ -6,7 +6,11 @@ from django.test import SimpleTestCase
 from django.urls import Resolver404, resolve
 from rest_framework.test import APIClient
 
-from api.dashboard import calcular_resumen_dashboard, obtener_resumen_dashboard
+from api.dashboard import (
+    _total_movimientos,
+    calcular_resumen_dashboard,
+    obtener_resumen_dashboard,
+)
 
 class AdminLoginRemovalTests(SimpleTestCase):
     def test_login_and_session_endpoints_are_no_longer_available(self):
@@ -189,7 +193,7 @@ class DashboardAdministradorApiTests(SimpleTestCase):
             movimientos.return_value = movimientos_queryset
             ventas.return_value.count.return_value = 4
             liquidaciones.return_value.count.return_value = 2
-            empleados.return_value.values.return_value = [
+            empleados.return_value.values.return_value.distinct.return_value = [
                 {'id_empleado': 1, 'nombre': 'Ada', 'apellido': 'Lovelace'},
                 {'id_empleado': 2, 'nombre': 'Grace', 'apellido': 'Hopper'},
             ]
@@ -212,5 +216,17 @@ class DashboardAdministradorApiTests(SimpleTestCase):
         self.assertEqual(resumen['asistencia']['presentes'], 1)
         self.assertEqual(resumen['cortes']['realizados'], 2)
         empleados.assert_called_once_with(
-            id_user__groups__name__iexact='Barberos',
+            id_user__groups__name__in=('Barbero', 'Barberos'),
         )
+
+
+class TotalMovimientosTests(SimpleTestCase):
+    def test_las_anulaciones_descuentan_del_total(self):
+        total = _total_movimientos([
+            {'tipo_movimiento': 'cobro', 'total': Decimal('100.00')},
+            {'tipo_movimiento': 'ingreso', 'total': Decimal('50.00')},
+            {'tipo_movimiento': 'anulacion', 'total': Decimal('40.00')},
+        ])
+
+        self.assertEqual(total, '110.00')
+
