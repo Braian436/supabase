@@ -1,5 +1,7 @@
+from django.db import IntegrityError
 from django.db.models import OuterRef, Subquery
 from rest_framework import generics, viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 
 from compras.models import DetallesCompras
@@ -14,6 +16,14 @@ from productos.models import Categorias, Descuentos, Marcas, Productos
 from ventas.models import DetallesProductos
 
 
+class CatalogoSeguroMixin:
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except IntegrityError as exc:
+            raise ValidationError('No se puede eliminar porque está en uso por un producto.') from exc
+
+
 class ProductosViewSet(viewsets.ModelViewSet):
     queryset = (
         Productos.objects.select_related('id_marca', 'id_categoria', 'id_descuento')
@@ -24,21 +34,21 @@ class ProductosViewSet(viewsets.ModelViewSet):
     pagination_class = None
 
 
-class MarcasAPIView(generics.ListAPIView):
+class MarcasViewSet(CatalogoSeguroMixin, viewsets.ModelViewSet):
     queryset = Marcas.objects.all().order_by('nombre')
     serializer_class = MarcasSerializer
     permission_classes = [AllowAny]
     pagination_class = None
 
 
-class CategoriasAPIView(generics.ListAPIView):
+class CategoriasViewSet(CatalogoSeguroMixin, viewsets.ModelViewSet):
     queryset = Categorias.objects.all().order_by('nombre')
     serializer_class = CategoriasSerializer
     permission_classes = [AllowAny]
     pagination_class = None
 
 
-class DescuentosAPIView(generics.ListAPIView):
+class DescuentosViewSet(CatalogoSeguroMixin, viewsets.ModelViewSet):
     queryset = Descuentos.objects.all().order_by('nombre')
     serializer_class = DescuentosSerializer
     permission_classes = [AllowAny]

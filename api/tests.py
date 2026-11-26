@@ -211,3 +211,6 @@ class DashboardAdministradorApiTests(SimpleTestCase):
         self.assertEqual(resumen['caja']['ingresos'], '7000.00')
         self.assertEqual(resumen['asistencia']['presentes'], 1)
         self.assertEqual(resumen['cortes']['realizados'], 2)
+        empleados.assert_called_once_with(
+            id_user__groups__name__iexact='Barberos',
+        )

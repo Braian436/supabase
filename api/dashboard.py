@@ -198,7 +198,7 @@ def obtener_resumen_dashboard(
 
     inicio_asistencia, fin_asistencia = _rango_dia(fecha_barberos)
     barberos = list(
-        Empleados.objects.filter(id_rol__nombre__iexact='Barbero')
+        Empleados.objects.filter(id_user__groups__name__iexact='Barberos')
         .values('id_empleado', 'nombre', 'apellido')
     )
     asistencias = list(

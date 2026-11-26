@@ -5,17 +5,11 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import serializers
 
-from empleados.models import (
-    EmpleadoCuenta,
-    Empleados,
-    LiquidacionesSemanales,
-    Roles,
-)
+from empleados.models import Empleados, LiquidacionesSemanales
 
 
 class EmpleadosSerializer(serializers.ModelSerializer):
     cuenta = serializers.SerializerMethodField()
-    rol_laboral = serializers.CharField(source='id_rol.nombre', read_only=True)
     usuario = serializers.CharField(required=False, allow_blank=True, max_length=150, write_only=True)
     contrasena = serializers.CharField(
         required=False,
@@ -30,8 +24,6 @@ class EmpleadosSerializer(serializers.ModelSerializer):
         model = Empleados
         fields = (
             'id_empleado',
-            'id_rol',
-            'rol_laboral',
             'nombre',
             'apellido',
             'dni',
@@ -46,18 +38,15 @@ class EmpleadosSerializer(serializers.ModelSerializer):
     def _obtener_cuenta(self, empleado):
         if empleado is None:
             return None
-        try:
-            return empleado.cuenta
-        except EmpleadoCuenta.DoesNotExist:
-            return None
+        return empleado.id_user
 
     def get_cuenta(self, empleado):
-        cuenta = self._obtener_cuenta(empleado)
-        if cuenta is None:
+        usuario = self._obtener_cuenta(empleado)
+        if usuario is None:
             return None
-        grupo = next(iter(cuenta.usuario.groups.all()), None)
+        grupo = next(iter(usuario.groups.all()), None)
         return {
-            'usuario': cuenta.usuario.get_username(),
+            'usuario': usuario.get_username(),
             'grupo': grupo.name if grupo else '',
         }
 
@@ -76,7 +65,7 @@ class EmpleadosSerializer(serializers.ModelSerializer):
         if not alguno_informado:
             return attrs
 
-        usuario_actual = cuenta_existente.usuario if cuenta_existente else None
+        usuario_actual = cuenta_existente
         username = valores['usuario']
         if username:
             usuarios = get_user_model().objects.filter(username=username)
@@ -111,20 +100,17 @@ class EmpleadosSerializer(serializers.ModelSerializer):
         if not any((usuario, contrasena, nombre_grupo)):
             return
 
-        cuenta = self._obtener_cuenta(empleado)
-        if cuenta is None:
+        usuario_actual = self._obtener_cuenta(empleado)
+        if usuario_actual is None:
             User = get_user_model()
             usuario_nuevo = User.objects.create_user(
                 username=usuario,
                 password=contrasena,
             )
-            EmpleadoCuenta.objects.create(
-                empleado=empleado,
-                usuario=usuario_nuevo,
-            )
-            cuenta = empleado.cuenta
+            empleado.id_user = usuario_nuevo
+            empleado.save(update_fields=['id_user'])
         else:
-            usuario_nuevo = cuenta.usuario
+            usuario_nuevo = usuario_actual
             campos_actualizados = []
             if usuario:
                 usuario_nuevo.username = usuario
@@ -164,13 +150,6 @@ class BarberoPublicoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empleados
         fields = ('id_empleado', 'nombre', 'apellido', 'foto_empleado')
-
-
-class RolLaboralSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Roles
-        fields = ('id_rol', 'nombre')
-
 
 class GrupoUsuarioSerializer(serializers.ModelSerializer):
     class Meta:

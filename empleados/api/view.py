@@ -8,15 +8,14 @@ from empleados.api.serializer import (
     EmpleadosSerializer,
     GrupoUsuarioSerializer,
     LiquidacionesSemanalesSerializer,
-    RolLaboralSerializer,
 )
-from empleados.models import EmpleadoCuenta, Empleados, LiquidacionesSemanales, Roles
+from empleados.models import Empleados, LiquidacionesSemanales
 
 
 class EmpleadosViewSet(viewsets.ModelViewSet):
     queryset = (
-        Empleados.objects.select_related('id_rol', 'cuenta__usuario')
-        .prefetch_related('cuenta__usuario__groups')
+        Empleados.objects.select_related('id_user')
+        .prefetch_related('id_user__groups')
         .order_by('pk')
     )
     serializer_class = EmpleadosSerializer
@@ -24,26 +23,10 @@ class EmpleadosViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         with transaction.atomic():
-            cuenta = (
-                EmpleadoCuenta.objects.select_related('usuario')
-                .filter(empleado=instance)
-                .first()
-            )
-            if cuenta is None:
-                instance.delete()
-                return
-
-            usuario = cuenta.usuario
-            usuario.is_active = False
-            usuario.save(update_fields=['is_active'])
+            if instance.id_user is not None:
+                instance.id_user.is_active = False
+                instance.id_user.save(update_fields=['is_active'])
             instance.delete()
-
-
-class RolesAPIView(generics.ListAPIView):
-    queryset = Roles.objects.all().order_by('nombre')
-    serializer_class = RolLaboralSerializer
-    permission_classes = [AllowAny]
-    pagination_class = None
 
 
 class GruposAPIView(generics.ListAPIView):
@@ -59,7 +42,9 @@ class BarberosPublicosAPIView(generics.ListAPIView):
     pagination_class = None
 
     def get_queryset(self):
-        return Empleados.objects.filter(id_rol__nombre='Barbero').order_by('pk')
+        return Empleados.objects.filter(
+            id_user__groups__name='Barberos',
+        ).order_by('pk')
 
 
 class LiquidacionesSemanalesViewSet(viewsets.ReadOnlyModelViewSet):

@@ -2,10 +2,12 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 from contextlib import nullcontext
 
+from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase
-from django.urls import reverse
 from django.contrib.auth.hashers import check_password, make_password
+from django.urls import Resolver404, resolve, reverse
 from rest_framework import serializers
+from rest_framework.test import APIClient
 
 from empleados.api import serializer as empleado_serializer
 from empleados.api.serializer import EmpleadosSerializer
@@ -13,13 +15,11 @@ from empleados.api.view import (
     EmpleadosViewSet,
     GruposAPIView,
     LiquidacionesSemanalesViewSet,
-    RolesAPIView,
 )
-from empleados.models import EmpleadoCuenta, Empleados
-from rest_framework.test import APIClient
+from empleados.models import Empleados
 
 
-class EmpleadoCuentaInputTests(SimpleTestCase):
+class CuentaEmpleadoInputTests(SimpleTestCase):
     def test_crear_cuenta_requiere_usuario_contrasena_y_grupo(self):
         serializer = EmpleadosSerializer()
 
@@ -45,8 +45,7 @@ class EmpleadoCuentaInputTests(SimpleTestCase):
             password=make_password('ClaveAnterior!234'),
             save=Mock(),
         )
-        cuenta = SimpleNamespace(usuario=usuario)
-        empleado = SimpleNamespace(cuenta=cuenta)
+        empleado = SimpleNamespace(id_user=usuario)
         serializer = EmpleadosSerializer(instance=empleado, partial=True)
 
         with (
@@ -78,7 +77,7 @@ class EmpleadoCuentaInputTests(SimpleTestCase):
             ),
             save=Mock(),
         )
-        empleado = SimpleNamespace(cuenta=SimpleNamespace(usuario=usuario))
+        empleado = SimpleNamespace(id_user=usuario)
         serializer = EmpleadosSerializer(instance=empleado, partial=True)
 
         with (
@@ -101,50 +100,73 @@ class EmpleadoCuentaInputTests(SimpleTestCase):
             groups=Mock(),
         )
         usuario.groups.all.return_value = [SimpleNamespace(name='Barberos')]
-        empleado = SimpleNamespace(
-            cuenta=SimpleNamespace(usuario=usuario),
-        )
+        empleado = SimpleNamespace(id_user=usuario)
 
         resultado = EmpleadosSerializer().get_cuenta(empleado)
 
         self.assertEqual(resultado, {'usuario': 'ana', 'grupo': 'Barberos'})
         self.assertNotIn('contrasena', resultado)
 
+    def test_crear_cuenta_asocia_usuario_directamente_al_empleado(self):
+        usuario = SimpleNamespace(groups=Mock())
+        empleado = SimpleNamespace(id_user=None, save=Mock())
+        user_model = Mock()
+        user_model.objects.create_user.return_value = usuario
+
+        with (
+            patch.object(empleado_serializer, 'get_user_model', return_value=user_model),
+            patch.object(empleado_serializer.Group.objects, 'get') as obtener_grupo,
+        ):
+            obtener_grupo.return_value = SimpleNamespace(name='Barberos')
+            EmpleadosSerializer()._guardar_cuenta(
+                empleado,
+                {
+                    'usuario': 'ana',
+                    'contrasena': 'ClaveFuerte!234',
+                    'grupo_usuario': 'Barberos',
+                },
+            )
+
+        self.assertIs(empleado.id_user, usuario)
+        empleado.save.assert_called_once_with(update_fields=['id_user'])
+        usuario.groups.set.assert_called_once()
+
 
 class EmpleadosModelTests(SimpleTestCase):
-    def test_empleado_no_tiene_vinculo_con_usuario(self):
-        self.assertFalse(
-            any(field.name == 'id_usuario' for field in Empleados._meta.get_fields())
+    def test_id_user_es_una_relacion_one_to_one_con_el_usuario_de_django(self):
+        field = Empleados._meta.get_field('id_user')
+
+        self.assertTrue(field.one_to_one)
+        self.assertIs(field.remote_field.model, get_user_model())
+        self.assertEqual(field.db_column, 'id_user')
+
+    def test_representacion_del_empleado_no_depende_de_rol(self):
+        empleado = Empleados(
+            nombre='Ada',
+            apellido='Lovelace',
+            dni='123',
         )
+
+        self.assertEqual(str(empleado), 'Ada Lovelace (DNI: 123)')
 
     def test_eliminar_empleado_desactiva_su_usuario(self):
         usuario = SimpleNamespace(is_active=True, save=Mock())
         empleado = SimpleNamespace(
+            id_user=usuario,
             delete=Mock(),
         )
 
-        with (
-            patch.object(empleado_serializer.transaction, 'atomic', nullcontext),
-            patch('empleados.api.view.EmpleadoCuenta.objects.select_related') as cuentas,
-        ):
-            cuentas.return_value.filter.return_value.first.return_value = SimpleNamespace(
-                usuario=usuario,
-            )
+        with patch('empleados.api.view.transaction.atomic', nullcontext):
             EmpleadosViewSet().perform_destroy(empleado)
 
         self.assertFalse(usuario.is_active)
         usuario.save.assert_called_once_with(update_fields=['is_active'])
         empleado.delete.assert_called_once_with()
 
-    def test_eliminar_empleado_sin_cuenta_no_intenta_desactivar_usuario(self):
-        empleado = SimpleNamespace()
-        empleado.delete = Mock()
+    def test_eliminar_empleado_sin_usuario_no_intenta_desactivar_cuenta(self):
+        empleado = SimpleNamespace(id_user=None, delete=Mock())
 
-        with (
-            patch.object(empleado_serializer.transaction, 'atomic', nullcontext),
-            patch('empleados.api.view.EmpleadoCuenta.objects.select_related') as cuentas,
-        ):
-            cuentas.return_value.filter.return_value.first.return_value = None
+        with patch('empleados.api.view.transaction.atomic', nullcontext):
             EmpleadosViewSet().perform_destroy(empleado)
 
         empleado.delete.assert_called_once_with()
@@ -193,7 +215,11 @@ class PublicBarberosApiTests(SimpleTestCase):
                 'foto_empleado': '/media/ada.jpg',
             }],
         )
-        filtrar.assert_called_once_with(id_rol__nombre='Barbero')
+        filtrar.assert_called_once_with(id_user__groups__name='Barberos')
+
+    def test_ruta_de_roles_ya_no_esta_registrada(self):
+        with self.assertRaises(Resolver404):
+            resolve('/api/roles/')
 
     def test_lista_administrativa_de_empleados_permite_anonimos(self):
         with patch(
@@ -229,15 +255,3 @@ class PublicBarberosApiTests(SimpleTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, [{'id': 3, 'name': 'Barberos'}])
-
-    def test_roles_laborales_se_listan_sin_autenticacion(self):
-        client = APIClient()
-        with patch.object(
-            RolesAPIView,
-            'queryset',
-            [SimpleNamespace(id_rol=2, nombre='Barbero')],
-        ):
-            response = client.get(reverse('roles-list'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, [{'id_rol': 2, 'nombre': 'Barbero'}])

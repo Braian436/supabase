@@ -106,12 +106,16 @@ Para agregar un endpoint real sobre un modelo de su organización:
 
 ### Acceso a la API
 
-Por el momento, las rutas de administración de empleados, roles, grupos y
+Por el momento, las rutas de administración de empleados, grupos y
 productos no requieren login. Esto es solo para desarrollo: cualquier cliente
 que alcance la API puede crear, modificar o eliminar estos registros, por lo
 que no se debe exponer el backend a Internet con esta configuración. El
 endpoint público de barberos sigue mostrando únicamente los datos necesarios
 para reservar.
+
+Las cuentas de empleados se vinculan directamente con usuarios de Django
+(`auth_user`). El grupo `Barberos` identifica a quienes aparecen en el endpoint
+público de barberos y en el resumen del dashboard.
 
 Los grupos disponibles para asignar a empleados deben existir previamente en
 Django; el CRUD no crea ni modifica grupos. Al eliminar desde el CRUD un
