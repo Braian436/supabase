@@ -21,7 +21,6 @@ class Ventas(models.Model):
     fecha_anulacion = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'ventas'
 
     def delete(self, *args, **kwargs):
@@ -42,7 +41,6 @@ class DetallesProductos(models.Model):
     importe = models.DecimalField(max_digits=12, decimal_places=2)
 
     class Meta:
-        managed = False
         db_table = 'detalles_productos'
 
     def __str__(self):
@@ -59,7 +57,6 @@ class DetallesServicios(models.Model):
     id_express = models.ForeignKey('turnos.TurnosExpress', models.DO_NOTHING, db_column='id_express', blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'detalles_servicios'
 
     def __str__(self):

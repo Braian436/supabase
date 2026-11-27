@@ -1,32 +1,40 @@
-# Base Docker + Django + PostgreSQL — Taller de Programación
+# Barbería Clase A — Django + PostgreSQL
 
 ## Contenido
 
 - `Dockerfile` → define la imagen del contenedor de Django.
-- `docker-compose.yml` → levanta dos servicios: `web` (Django) y `db` (Postgres).
+- `docker-compose.yml` → levanta Django y PostgreSQL 17 en contenedores separados.
 - `requirements.txt` → dependencias de Python.
 - `entrypoint.sh` → espera a la base de datos, aplica migraciones y arranca el servidor.
 - `.env.example` → variables de entorno de ejemplo (copiar como `.env`).
-- `manage.py`, `config/` → proyecto Django ya iniciado (`django-admin startproject`).
-- `core/` → app de ejemplo con una vista de inicio que confirma que el stack funciona.
-- `api/` → app de ejemplo con un endpoint REST (`/api/estado/`), lista para ampliar con los serializers y vistas de su organización.
+- `manage.py`, `config/` → configuración del proyecto Django.
+- `core/`, `api/` y las apps de negocio → vistas, endpoints y modelos del sistema.
+- `scripts/` → migración reproducible desde Supabase y SQL auxiliares.
 
 ## Primeros pasos
 
-1. Copien `.env.example` como `.env` y ajusten el nombre de la base de datos y
-   usuario según el nombre de su organización (por ejemplo: `sabor_andino_db`).
+1. En PowerShell, copien `.env.example` como `.env` y cambien las credenciales
+   locales si lo necesitan:
+   ```powershell
+   Copy-Item .env.example .env
+   ```
 
 2. Levanten los contenedores:
    ```
    docker compose up --build
    ```
+   PostgreSQL usa la imagen oficial `postgres:17.12-alpine`; Django espera a
+   que el servicio de base esté saludable y aplica las migraciones al iniciar.
 
 3. Abran en el navegador:
    ```
    http://localhost:8000
    ```
-   Si ven la pantalla "Stack funcionando", Django se conectó correctamente a
-   Postgres y ya pueden empezar a trabajar.
+   Django se conecta al servicio PostgreSQL local. El esquema lo crean las
+   migraciones de Django. En esta instalación la base ya tiene los datos
+   migrados desde el proyecto original de Supabase (ver "Migración desde
+   Supabase"). Si clonan el repo en otra máquina, la base se crea vacía y
+   pueden cargar los datos con el script de migración.
 
 4. Prueben también el endpoint de ejemplo de la API REST:
    ```
@@ -57,6 +65,66 @@
    ```
    (Los datos de la base de datos NO se pierden: quedan en el volumen
    `postgres_data`. Si quieren borrar todo desde cero, usen `docker compose down -v`).
+
+## Migración desde Supabase
+
+Este proyecto se migró desde un proyecto de Supabase que corría PostgreSQL
+17.11. La base local usa PostgreSQL 17.12 (`postgres:17.12-alpine`), la misma
+versión mayor; el cliente `pg_dump` 17.12 puede volcar sin problemas un
+servidor 17.11.
+
+La estrategia es: **Django crea el esquema con sus migraciones y de Supabase
+solo se copian los datos**. No se restaura el esquema completo de Supabase
+porque las migraciones locales están regeneradas y no coinciden con las 45
+migraciones históricas del proyecto remoto; además, el dump completo arrastra
+RLS, roles de Supabase y la tabla legacy `empleado_cuentas`.
+
+Qué se migra:
+
+- Todas las tablas de negocio y las tablas de Django (`auth_*`, `authtoken`,
+  `django_*`) del schema `public`.
+- Se preservan los 3 grupos (`Cajero`, `Barbero`, `Administrador`), sus 212
+  permisos, los 5 usuarios, los tokens y el historial del admin.
+
+Qué NO se migra:
+
+- `django_migrations` (la base local usa las migraciones del repo).
+- `empleado_cuentas` (tabla legacy, vacía, ya no existe en los modelos).
+- Los schemas administrados por Supabase (`auth`, `storage`, `realtime`,
+  `vault`): están vacíos y la app no los usa.
+
+### Re-exportar e importar
+
+El script `scripts/migrar-supabase.ps1` hace todo el proceso:
+
+```powershell
+# 1. Completar scripts/supabase.env (copiar de supabase.env.example)
+
+# Opcion A: hacer todo (exportar + importar)
+.\scripts\migrar-supabase.ps1
+
+# Opcion B: por separado
+.\scripts\migrar-supabase.ps1 -SoloExportar   # solo backup, no toca la base
+.\scripts\migrar-supabase.ps1 -SoloImportar   # importa lo ya exportado
+```
+
+Si PowerShell bloquea el script por la política de ejecución, corranlo así:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\migrar-supabase.ps1
+```
+
+Usen el puerto **5432** del pooler de Supabase (session mode). El 6543 es el
+transaction pooler y no sirve para `pg_dump`.
+
+### Seguridad
+
+- `backups/` contiene datos personales (clientes, teléfonos) y hashes de
+  contraseñas. Está en `.gitignore`; no lo suban al repo.
+- `scripts/supabase.env` contiene las credenciales de Supabase. También está
+  en `.gitignore`. Después de migrar conviene rotar la contraseña en Supabase
+  y borrar ese archivo.
+- El archivo `.env` local también está en `.gitignore`.
 
 ## API REST (Django REST Framework)
 
@@ -114,7 +182,7 @@ endpoint público de barberos sigue mostrando únicamente los datos necesarios
 para reservar.
 
 Las cuentas de empleados se vinculan directamente con usuarios de Django
-(`auth_user`). El grupo `Barberos` identifica a quienes aparecen en el endpoint
+(`auth_user`). El grupo `Barbero` identifica a quienes aparecen en el endpoint
 público de barberos y en el resumen del dashboard.
 
 Los grupos disponibles para asignar a empleados deben existir previamente en
@@ -156,48 +224,39 @@ docker compose exec web python manage.py migrate
 │   ├── views.py
 │   ├── models.py
 │   └── templates/core/home.html
-└── api/             # app de ejemplo para la API REST
-    ├── views.py
-    └── urls.py
+├── api/             # app de ejemplo para la API REST
+│   ├── views.py
+│   └── urls.py
+└── scripts/         # migración desde Supabase y SQL auxiliares
+    ├── migrar-supabase.ps1
+    ├── supabase.env.example
+    └── sql/
+        ├── truncate_public.sql
+        ├── reset_sequences.sql
+        └── verify_counts.sql
 ```
-## Flujo para sincronizar Nuevas Tablas de Supabase
-Cada vez que se cree o modifique una tabla directamente desde el panel de Supabase, se debe seguir este procedimiento para reflejarla en Django:
 
-1. Para crear una app nueva de Django:
-   ```
-   docker compose exec web python manage.py startapp nombre_app
-   ```
-2.  Inspeccionar la base de datos con `inspectdb`
-   Ejecutar el comando de inspección indicando el nombre exacto de la tabla creada en Supabase:
-   ```
-   docker compose exec web python manage.py inspectdb nombre_de_tabla
-   ```
-3. Actualizar `nombre_app/models.py`
-   Copiar la clase generada en la terminal y pegarla al final de `nombre_app/models.py`, asegurándose de mantener `managed = False` y de incluir el método `__str__`:
-   ```
-   class NombreDeTabla(models.Model):
-    # Campos detectados automáticamente...
+## Cambios de esquema
 
-    class Meta:
-        managed = False  # Indica a Django que la tabla es gestionada externamente por Supabase
-        db_table = 'nombre_de_tabla'
+Las tablas de negocio están gestionadas por Django (`managed = True`). Las
+migraciones del repo son la fuente de verdad del esquema: no hace falta
+`inspectdb` ni volver a marcar `managed = False`. Para añadir o modificar una
+tabla, actualicen el modelo correspondiente y generen/apliquen la migración:
 
-    def __str__(self):
-        return f"Registro #{self.pk}"
-   ```
-4. Asentar las migraciones
-   Registrar internamente el modelo en el historial de Django sin alterar la estructura física de Supabase:
-   ```
-   docker compose exec web python manage.py makemigrations
-   docker compose exec web python manage.py migrate
-   ```
-5. Habilitar la entidad en el Panel de Administracion
-   Abrir `nombre_app/admin.py`, importar el modelo y registrarlo:
-   ```
-   from .models import NombreDeTabla
+```
+docker compose exec web python manage.py makemigrations
+docker compose exec web python manage.py migrate
+```
 
-   admin.site.register(NombreDeTabla)
-   ```
-   
+Los puertos locales predeterminados son `8000` para Django y `5432` para
+PostgreSQL. Si uno ya está ocupado, cambien `DJANGO_HOST_PORT` o
+`POSTGRES_HOST_PORT` en `.env`. Los datos sobreviven a `docker compose down`
+gracias al volumen `postgres_data`. `docker compose down -v` elimina ese volumen
+y borra permanentemente los datos locales.
+
+Esta configuración incluye PostgreSQL y el backend Django; no incluye otros
+servicios de base de datos o plataforma.
+
 ---
-Prof. Lic. Adrián Aguirre | ISDEM | Taller de Programación
+
+ISDEM | Barbería Clase A

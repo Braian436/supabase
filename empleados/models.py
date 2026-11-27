@@ -18,7 +18,6 @@ class Empleados(models.Model):
     )
 
     class Meta:
-        managed = False
         db_table = 'empleados'
 
     @property
@@ -44,7 +43,6 @@ class RegistrosAsistencias(models.Model):
     observacion = models.CharField(max_length=200, blank=True, default='')
 
     class Meta:
-        managed = False
         db_table = 'registros_asistencias'
 
     def __str__(self):
@@ -62,7 +60,6 @@ class LiquidacionesSemanales(models.Model):
     estado = models.BooleanField()
 
     class Meta:
-        managed = False
         db_table = 'liquidaciones_semanales'
 
     def __str__(self):

@@ -9,7 +9,6 @@ class Clientes(models.Model):
     fecha_nacimiento = models.DateField(blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'clientes'
 
     def __str__(self):
@@ -25,7 +24,6 @@ class Turnos(models.Model):
     estado = models.CharField(max_length=25)
 
     class Meta:
-        managed = False
         db_table = 'turnos'
 
     def __str__(self):
@@ -48,7 +46,6 @@ class TurnosExpress(models.Model):
     estado = models.TextField()
 
     class Meta:
-        managed = False
         db_table = 'turnos_express'
 
     def __str__(self):

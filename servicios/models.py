@@ -8,7 +8,6 @@ class Servicios(models.Model):
     precio = models.DecimalField(max_digits=12, decimal_places=2)
 
     class Meta:
-        managed = False
         db_table = 'servicios'
 
     def __str__(self):
@@ -27,7 +26,6 @@ class ServiciosTurnos(models.Model):
     id_servicio = models.ForeignKey(Servicios, models.DO_NOTHING, db_column='id_servicio')
 
     class Meta:
-        managed = False
         db_table = 'servicios_turnos'
 
     def __str__(self):
@@ -43,7 +41,6 @@ class EmpleadosServicios(models.Model):
     descripcion = models.CharField(max_length=100)
 
     class Meta:
-        managed = False
         db_table = 'empleados_servicios'
 
     def __str__(self):

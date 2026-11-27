@@ -13,7 +13,6 @@ class Productos(models.Model):
     id_descuento = models.ForeignKey('Descuentos', models.DO_NOTHING, db_column='id_descuento')
 
     class Meta:
-        managed = False
         db_table = 'productos'
 
     def __str__(self):
@@ -25,7 +24,6 @@ class Marcas(models.Model):
     nombre = models.CharField(max_length=80)
 
     class Meta:
-        managed = False
         db_table = 'marcas'
 
     def __str__(self):
@@ -39,7 +37,6 @@ class Categorias(models.Model):
     estado = models.BooleanField()
 
     class Meta:
-        managed = False
         db_table = 'categorias'
 
     def __str__(self):
@@ -53,7 +50,6 @@ class Descuentos(models.Model):
     cantidad = models.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
-        managed = False
         db_table = 'descuentos'
 
     def __str__(self):

@@ -7,7 +7,6 @@ class Compras(models.Model):
     fecha = models.DateTimeField()
 
     class Meta:
-        managed = False
         db_table = 'compras'
 
     def __str__(self):
@@ -24,7 +23,6 @@ class DetallesCompras(models.Model):
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
 
     class Meta:
-        managed = False
         db_table = 'detalles_compras'
 
     def __str__(self):

@@ -19,7 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # variable de entorno con un valor propio y secreto.
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
-    'django-insecure-cambiar-esta-clave-en-produccion'
+    'django-insecure-local-development-only'
 )
 
 # DEBUG viene de la variable de entorno DEBUG definida en docker-compose.yml.
@@ -92,15 +92,13 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # --------------------------------------------------------------------------
 # Base de datos
 # --------------------------------------------------------------------------
-# Se conecta al servicio "db" definido en docker-compose.yml (Postgres).
-# Los valores por defecto coinciden con los del docker-compose.yml y el
-# .env.example, para que funcione "out of the box" sin configurar nada.
+# Se conecta al servicio "db" definido en docker-compose.yml (PostgreSQL).
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'proyecto_db'),
-        'USER': os.environ.get('POSTGRES_USER', 'proyecto_user'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'proyecto_pass'),
+        'NAME': os.environ.get('POSTGRES_DB', 'barberia_db'),
+        'USER': os.environ.get('POSTGRES_USER', 'barberia'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'local_dev_password'),
         'HOST': os.environ.get('POSTGRES_HOST', 'db'),
         'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     }

@@ -12,7 +12,6 @@ class Cajas(models.Model):
     diferencia = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'cajas'
 
     def __str__(self):
@@ -37,7 +36,6 @@ class MovimientosCajas(models.Model):
     vuelto = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'movimientos_cajas'
 
     def __str__(self):
