@@ -77,7 +77,7 @@ class BarberosPublicosAPIView(generics.ListAPIView):
     def get_queryset(self):
         return (
             Empleados.objects.filter(
-                id_user__groups__name__in=('Barbero', 'Barberos'),
+                id_user__groups__name__in=('Barbero', 'Barberos', 'Administrador'),
             )
             .distinct()
             .order_by('pk')
