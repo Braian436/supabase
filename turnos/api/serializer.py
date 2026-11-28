@@ -36,14 +36,20 @@ class ReservaTurnoSerializer(serializers.Serializer):
     nombre = serializers.CharField(allow_blank=False, trim_whitespace=True)
     apellido = serializers.CharField(allow_blank=False, trim_whitespace=True)
     telefono = serializers.CharField(allow_blank=False, trim_whitespace=True)
+    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True, default='')
+    servicios = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), required=False, allow_empty=True, default=list
+    )
+    id_servicio = serializers.IntegerField(min_value=1, required=False)
 
 
 class ClientesSerializer(serializers.ModelSerializer):
     fecha_nacimiento = serializers.DateField(required=False, allow_null=True)
+    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = Clientes
-        fields = ('id_cliente', 'nombre', 'apellido', 'telefono', 'fecha_nacimiento')
+        fields = ('id_cliente', 'nombre', 'apellido', 'telefono', 'email', 'fecha_nacimiento')
 
     def _limpiar(self, value, etiqueta):
         texto = value.strip()
@@ -59,6 +65,10 @@ class ClientesSerializer(serializers.ModelSerializer):
 
     def validate_telefono(self, value):
         return self._limpiar(value, 'teléfono')
+
+    def validate_email(self, value):
+        email = (value or '').strip()
+        return email or None
 
 
 class TurnosSerializer(serializers.ModelSerializer):
@@ -88,6 +98,7 @@ class TurnosSerializer(serializers.ModelSerializer):
             'nombre': cliente.nombre,
             'apellido': cliente.apellido,
             'telefono': cliente.telefono,
+            'email': cliente.email,
         }
 
     def get_barbero(self, turno):

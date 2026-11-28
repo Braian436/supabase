@@ -75,6 +75,12 @@ class CobrarVentaSerializer(serializers.Serializer):
     )
 
 
+class AgregarItemVentaSerializer(serializers.Serializer):
+    tipo = serializers.ChoiceField(choices=['servicio', 'producto'])
+    id_item = serializers.IntegerField(min_value=1)
+    cantidad = serializers.IntegerField(min_value=1, default=1)
+
+
 class ItemServicioSerializer(serializers.Serializer):
     id_servicio = serializers.IntegerField(min_value=1)
     cantidad = serializers.IntegerField(min_value=1)
@@ -89,6 +95,7 @@ class ClienteNuevoSerializer(serializers.Serializer):
     telefono = serializers.CharField(max_length=18, trim_whitespace=True)
     nombre = serializers.CharField(max_length=80, trim_whitespace=True)
     apellido = serializers.CharField(max_length=50, trim_whitespace=True)
+    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True, default='')
 
 
 class CrearTicketSerializer(serializers.Serializer):

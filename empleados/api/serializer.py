@@ -221,6 +221,28 @@ class GrupoUsuarioSerializer(serializers.ModelSerializer):
 
 
 class LiquidacionesSemanalesSerializer(serializers.ModelSerializer):
+    empleado_nombre = serializers.CharField(source='id_empleado.nombre', read_only=True)
+    empleado_apellido = serializers.CharField(source='id_empleado.apellido', read_only=True)
+    porcentaje_comision = serializers.DecimalField(
+        source='id_empleado.porcentaje_comision', max_digits=5, decimal_places=2, read_only=True
+    )
+
     class Meta:
         model = LiquidacionesSemanales
-        fields = '__all__'
+        fields = (
+            'id_liquidacion', 'id_empleado', 'empleado_nombre', 'empleado_apellido',
+            'porcentaje_comision', 'fecha_generacion', 'fecha_inicio', 'fecha_fin',
+            'total_comision', 'total_a_pagar', 'estado',
+        )
+        read_only_fields = ('fecha_generacion',)
+
+    def validate(self, attrs):
+        inicio = attrs.get('fecha_inicio', getattr(self.instance, 'fecha_inicio', None))
+        fin = attrs.get('fecha_fin', getattr(self.instance, 'fecha_fin', None))
+        if inicio and fin and inicio > fin:
+            raise serializers.ValidationError({'fecha_fin': 'La fecha fin debe ser posterior a la fecha inicio.'})
+        for campo in ('total_comision', 'total_a_pagar'):
+            valor = attrs.get(campo, getattr(self.instance, campo, None))
+            if valor is not None and valor < 0:
+                raise serializers.ValidationError({campo: 'No puede ser negativo.'})
+        return attrs

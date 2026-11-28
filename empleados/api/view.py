@@ -1,10 +1,13 @@
 from datetime import datetime, time, timedelta
+from decimal import Decimal
 
 from django.contrib.auth.models import Group
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework import generics, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -20,6 +23,9 @@ from empleados.api.serializer import (
     RegistrosAsistenciasSerializer,
 )
 from empleados.models import Empleados, LiquidacionesSemanales, RegistrosAsistencias
+from servicios.models import ServiciosTurnos
+from turnos.models import Turnos, TurnosExpress
+from ventas.models import DetallesServicios, Ventas
 
 
 def hay_caja_abierta():
@@ -223,14 +229,97 @@ class RegistrosAsistenciasViewSet(viewsets.ModelViewSet):
         serializer.save(fecha_modificacion=timezone.now())
 
 
-class LiquidacionesSemanalesViewSet(viewsets.ReadOnlyModelViewSet):
+ESTADOS_FINALIZADOS = {
+    'finalizado', 'completado', 'realizado', 'atendido', 'asistio', 'done', 'finished', 'completed',
+}
+
+
+def _normalizar_estado(valor):
+    return str(valor or '').strip().casefold()
+
+
+def _parse_fecha(valor, nombre):
+    if not valor:
+        raise ValidationError({nombre: 'Este campo es requerido.'})
+    dt = parse_datetime(str(valor))
+    if dt is None:
+        d = parse_date(str(valor))
+        if d is None:
+            raise ValidationError({nombre: 'Formato inválido.'})
+        dt = datetime.combine(d, time.min)
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.get_current_timezone())
+    return dt
+
+
+def _calcular_liquidacion(empleado, inicio, fin):
+    if fin < inicio:
+        raise ValidationError({'fecha_fin': 'Debe ser posterior a fecha_inicio.'})
+    turnos_ids = list(
+        Turnos.objects.filter(id_empleado=empleado, fecha__gte=inicio.date(), fecha__lte=fin.date())
+        .values_list('id_turno', 'estado')
+    )
+    finalizados_ids = [tid for tid, est in turnos_ids if _normalizar_estado(est) in ESTADOS_FINALIZADOS]
+    servicios_turnos = ServiciosTurnos.objects.filter(id_turno_id__in=finalizados_ids).count() if finalizados_ids else 0
+    if servicios_turnos == 0:
+        servicios_turnos = len(finalizados_ids)
+
+    express = TurnosExpress.objects.filter(id_empleado=empleado, fecha__gte=inicio, fecha__lte=fin).values('estado')
+    servicios_express = sum(1 for t in express if _normalizar_estado(t['estado']) in ESTADOS_FINALIZADOS)
+    cantidad_servicios = servicios_turnos + servicios_express
+
+    ventas = Ventas.objects.filter(
+        Q(id_turno__id_empleado=empleado) | Q(id_express__id_empleado=empleado),
+        fecha_venta__gte=inicio, fecha_venta__lte=fin, estado=True, anulada=False,
+    )
+    base = Decimal('0')
+    for v in ventas:
+        base += Decimal(str(v.subtotal or 0)) - Decimal(str(v.descuento or 0))
+    if base < 0:
+        base = Decimal('0')
+    porcentaje = Decimal(str(empleado.porcentaje_comision or 0))
+    total_comision = (base * porcentaje / Decimal('100')).quantize(Decimal('0.01'))
+    return {
+        'id_empleado': empleado.id_empleado,
+        'empleado_nombre': empleado.nombre,
+        'empleado_apellido': empleado.apellido,
+        'porcentaje_comision': str(porcentaje),
+        'fecha_inicio': inicio.isoformat(),
+        'fecha_fin': fin.isoformat(),
+        'cantidad_servicios': cantidad_servicios,
+        'base': str(base.quantize(Decimal('0.01'))),
+        'total_comision': str(total_comision),
+        'total_a_pagar': str(total_comision),
+    }
+
+
+class LiquidacionesSemanalesViewSet(viewsets.ModelViewSet):
     serializer_class = LiquidacionesSemanalesSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [EsAdministrador]
 
     def get_queryset(self):
-        liquidaciones = LiquidacionesSemanales.objects.all()
-        request = getattr(self, 'request', None)
-        empleado = request.query_params.get('empleado') if request is not None else None
+        qs = LiquidacionesSemanales.objects.select_related('id_empleado').order_by('-fecha_inicio', '-id_liquidacion')
+        params = self.request.query_params
+        empleado = params.get('empleado') or params.get('id_empleado')
         if empleado:
-            liquidaciones = liquidaciones.filter(id_empleado_id=empleado)
-        return liquidaciones
+            qs = qs.filter(id_empleado_id=empleado)
+        estado = params.get('estado')
+        if estado in ('true', 'false', '1', '0'):
+            qs = qs.filter(estado=estado in ('true', '1'))
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(fecha_generacion=timezone.now())
+
+    @action(detail=False, methods=['post'], url_path='calcular')
+    def calcular(self, request):
+        empleado_id = request.data.get('id_empleado')
+        if not empleado_id:
+            raise ValidationError({'id_empleado': 'Este campo es requerido.'})
+        try:
+            empleado = Empleados.objects.get(pk=empleado_id)
+        except Empleados.DoesNotExist:
+            raise ValidationError({'id_empleado': 'Empleado no encontrado.'})
+        inicio = _parse_fecha(request.data.get('fecha_inicio'), 'fecha_inicio')
+        fin = _parse_fecha(request.data.get('fecha_fin'), 'fecha_fin')
+        return Response(_calcular_liquidacion(empleado, inicio, fin))

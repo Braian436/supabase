@@ -9,6 +9,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from api.permissions import EsAdministradorOCajero
 from cajas.api.views import autenticar_cajero
 from cajas.models import Cajas, MovimientosCajas
 from productos.models import Productos
@@ -17,6 +18,7 @@ from turnos.models import Clientes
 from ventas.models import DetallesProductos, DetallesServicios, Ventas
 
 from .serializers import (
+    AgregarItemVentaSerializer,
     AnularVentaSerializer,
     CancelarVentaSerializer,
     CobrarVentaSerializer,
@@ -198,6 +200,53 @@ class VentasViewSet(viewsets.ModelViewSet):
 
         return Response(VentaSerializer(venta).data)
 
+    @action(detail=True, methods=['post'], url_path='agregar-item', permission_classes=[EsAdministradorOCajero])
+    def agregar_item(self, request, pk=None):
+        if not Cajas.objects.filter(fecha_cierre__isnull=True).exists():
+            return Response({'detail': 'No hay una caja abierta.'}, status=status.HTTP_409_CONFLICT)
+        serializer = AgregarItemVentaSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        datos = serializer.validated_data
+        with transaction.atomic():
+            venta = Ventas.objects.select_for_update().filter(pk=pk).first()
+            if venta is None:
+                raise NotFound('La venta no existe.')
+            if venta.anulada or venta.estado:
+                return Response({'detail': 'Solo se pueden editar tickets pendientes.'}, status=status.HTTP_409_CONFLICT)
+            if datos['tipo'] == 'servicio':
+                servicio = Servicios.objects.filter(pk=datos['id_item']).first()
+                if not servicio:
+                    raise ValidationError({'id_item': 'El servicio no existe.'})
+                DetallesServicios.objects.create(
+                    id_venta=venta, id_servicio=servicio, precio_unitario=servicio.precio,
+                    cantidad=datos['cantidad'], importe=servicio.precio * datos['cantidad'],
+                )
+            else:
+                producto = Productos.objects.select_for_update().filter(pk=datos['id_item']).first()
+                if not producto:
+                    raise ValidationError({'id_item': 'El producto no existe.'})
+                precio = (
+                    DetallesProductos.objects.filter(id_producto=producto)
+                    .order_by('-id_venta__fecha_venta', '-id_detalle_producto')
+                    .values_list('precio_unitario', flat=True).first()
+                )
+                if precio is None:
+                    raise ValidationError({'id_item': f'El producto {producto.nombre} no tiene precio de venta registrado.'})
+                cantidad = datos['cantidad']
+                if producto.stock_actual < cantidad:
+                    raise ValidationError({'cantidad': f'Stock insuficiente de {producto.nombre}.'})
+                DetallesProductos.objects.create(
+                    id_venta=venta, id_producto=producto, precio_unitario=precio,
+                    cantidad=cantidad, importe=precio * cantidad,
+                )
+                Productos.objects.filter(pk=producto.pk).update(stock_actual=F('stock_actual') - cantidad)
+            total_serv = sum((d.importe for d in DetallesServicios.objects.filter(id_venta=venta)), Decimal('0'))
+            total_prod = sum((d.importe for d in DetallesProductos.objects.filter(id_venta=venta)), Decimal('0'))
+            venta.subtotal = total_serv + total_prod
+            venta.save(update_fields=['subtotal'])
+        venta = self.get_queryset().get(pk=pk)
+        return Response(VentaSerializer(venta).data)
+
     @action(detail=False, methods=['post'], url_path='crear-ticket')
     def crear_ticket(self, request):
         if not Cajas.objects.filter(fecha_cierre__isnull=True).exists():
@@ -273,13 +322,33 @@ class VentasViewSet(viewsets.ModelViewSet):
                 'cliente': 'Indicá un cliente existente o uno nuevo.'
             })
 
-        cliente, _ = Clientes.objects.get_or_create(
-            telefono=cliente_nuevo['telefono'],
-            defaults={
-                'nombre': cliente_nuevo['nombre'],
-                'apellido': cliente_nuevo['apellido'],
-            },
-        )
+        telefono_raw = str(cliente_nuevo.get('telefono') or '').strip()
+        tel = ''.join(ch for ch in telefono_raw if ch.isdigit())
+        cliente = None
+        if tel:
+            candidatos = []
+            for c in Clientes.objects.all().order_by('-id_cliente'):
+                if ''.join(ch for ch in str(c.telefono or '') if ch.isdigit()) != tel:
+                    continue
+                exacto = str(c.telefono or '').strip() == telefono_raw
+                candidatos.append((exacto, c))
+            for exacto, c in candidatos:
+                if exacto:
+                    cliente = c
+                    break
+            if cliente is None and candidatos:
+                cliente = candidatos[0][1]
+        email = (cliente_nuevo.get('email') or '').strip() or None
+        if cliente is None:
+            cliente = Clientes.objects.create(
+                telefono=cliente_nuevo['telefono'],
+                nombre=cliente_nuevo['nombre'],
+                apellido=cliente_nuevo['apellido'],
+                email=email,
+            )
+        elif email and not cliente.email:
+            cliente.email = email
+            cliente.save(update_fields=['email'])
         return cliente
 
     def _preparar_servicios(self, items):

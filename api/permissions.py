@@ -30,6 +30,12 @@ class EsCajero(TieneGrupo):
     grupo = 'Cajero'
 
 
+class EsAdministradorOCajero(BasePermission):
+    def has_permission(self, request, view):
+        usuario = request.user
+        return _tiene_grupo(usuario, 'Administrador') or _tiene_grupo(usuario, 'Cajero')
+
+
 class EsBarberoOAdministrador(BasePermission):
     def has_permission(self, request, view):
         usuario = request.user
